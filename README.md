@@ -1,5 +1,7 @@
 # Curse to Modrinth Migrator
 
+## REQUIRES CHROME TO BE INSTALLED
+
 This project only handles copying files from Curse to Modrinth - nothing else. It's pretty crude but great if you want to catch up your Modrinth mod with CurseForge's versions.
 
 ## Steps
