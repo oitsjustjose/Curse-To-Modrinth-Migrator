@@ -4,137 +4,43 @@ Author: oitsjustjose @ modrinth/curseforge/twitter
 """
 
 import json
-from dataclasses import asdict, dataclass
-from multiprocessing import Manager, Process
+from dataclasses import asdict
+from multiprocessing import Process
 from os import environ as env
-from os.path import exists
-from time import sleep
-from typing import List
 
-from cryptography.fernet import Fernet
 from flask import Flask, request
-from shortuuid import ShortUUID
 
-from processor import download, upload
-
-
-@dataclass
-class Job:
-    """A single job"""
-
-    github_pat: str
-    curseforge_slug: str
-    modrinth_id: str
-    logs = []
-    job_id: str = ShortUUID().random(length=8)
-    delimiter: str = "-"
+from db import Job, JobDb, Status
+from job_processor import worker
 
 
 app = Flask(__name__)
-fer = Fernet(env["SECRET"])
+
+db = JobDb(env["MONGO_URI"], int(env["MONGO_PORT"]))
 
 
-manager = Manager()
-active_jobs: List[Job] = manager.list()
-jobs: List[Job] = manager.list()
-completed: List[Job] = manager.list()
-
-
-def job_processor():
-    print("Starting the job processor")
-    while True:
-        try:
-            sleep(1)
-            if not jobs:
-                continue
-            active_job = jobs[0]
-            active_jobs.append(active_job)
-
-            active_job.logs += download(active_job.curseforge_slug)
-            active_job.logs += upload(
-                active_job.github_pat,
-                active_job.curseforge_slug,
-                active_job.modrinth_id,
-                active_job.delimiter,
-            )
-
-            active_job.github_pat = ""
-            completed.append(active_job)
-
-            for idx, obj in enumerate(active_jobs):
-                if obj.job_id == active_job.job_id:
-                    del active_jobs[idx]
-            for idx, obj in enumerate(jobs):
-                if obj.job_id == active_job.job_id:
-                    del jobs[idx]
-
-        except KeyboardInterrupt:
-            break
-
-
-def save():
-    """Saves the current application state to an encrypted file"""
-
-    data = {
-        "jobs": [asdict(x) for x in jobs],
-        "completed": dict(completed),
-    }
-    with open("./state.dat", "wb") as handle:
-        handle.write(fer.encrypt(json.dumps(data).encode()))
-
-
-def load():
-    """Loads the current application state from encrypted file"""
-    global active_job, jobs, completed
-    if not exists("./state.dat"):
-        return
-    with open("./state.dat", "rb") as handle:
-        data = json.loads(fer.decrypt(handle.read().decode()))
-    if "jobs" in data:
-        for job in data["jobs"]:
-            jobs.append(
-                Job(
-                    github_pat=job["github_pat"],
-                    curseforge_slug=job["curseforge_slug"],
-                    modrinth_id=job["modrinth_id"],
-                    job_id=job["job_id"],
-                    delimiter=job["delimiter"],
-                )
-            )
-
-    if "completed" in data:
-        completed = data["completed"]
-    print(completed, jobs)
-
-
-@app.route("/jobs/status/<uuid>", methods=["GET", "POST"])
-def get_job_status(uuid: str) -> str:
+@app.route("/jobs/status/<job_id>", methods=["GET", "POST"])
+def get_job_status(job_id: str) -> str:
     "Gets the queue status for a given job"
-    for job in active_jobs:
-        if job.job_id == uuid:
-            return "Currently Processing", 200
 
-    for job in completed:
-        if job.job_id == uuid:
-            logs = "\\n".join(job.logs)
-            return f"Completed!\n{logs}", 200
-
-    for idx, job in enumerate(jobs):
-        if job.job_id == uuid:
-            return f"Enqueued: {idx+1} Job(s) Ahead In Queue", 200
-
+    status, logs, queue = db.get_job_status(job_id)
+    if status == Status.ENQUEUED:
+        return f"Enqueued: {queue} Job(s) Ahead In Queue", 200
+    if status == Status.PROCESSING:
+        return f"Currently Processing!\n{logs}", 200
+    if status == Status.COMPLETED:
+        return f"Completed!\n{logs}", 200
     return "Failed to find job", 404
 
 
-@app.route("/jobs/info/<uuid>", methods=["GET", "POST"])
-def get_job_info(uuid: str):
+@app.route("/jobs/info/<job_id>", methods=["GET", "POST"])
+def get_job_info(job_id: str):
     """Gets the job info for a given uuid"""
-    for job in jobs:
-        if job.job_id == uuid:
-            data = asdict(job)
-            data.pop("github_pat")
-            return json.dumps(data), 200
-    return "Failed to find job", 404
+    job = db.get_job(job_id)
+    if not job:
+        return "Failed to find job", 404
+    job.github_pat = ""
+    return json.dumps(asdict(job), indent=2), 200
 
 
 @app.route("/jobs/new", methods=["POST"])
@@ -149,26 +55,18 @@ def new_job():
             delimiter=data["delimiter"] if "delimiter" in data else "-",
         )
 
-        # Don't enqueue a task that already exists
-        for job in jobs:
-            if (
-                job.github_pat == jobe.github_pat
-                and job.curseforge_slug == jobe.curseforge_slug
-                and job.modrinth_id == jobe.modrinth_id
-                and job.delimiter == jobe.delimiter
-            ):
-                return job.job_id, 200
-
-        jobs.append(jobe)
-        return jobe.job_id, 200
+        # Job already exists in queue, give it back
+        existing = db.get_existing_queued_job(jobe.curseforge_slug, jobe.modrinth_id)
+        if existing:
+            return existing, 200
+        return db.enqueue_job(jobe), 200
     except:
         return "Internal Server Error", 500
 
 
-load()
-proc = Process(target=job_processor)
-proc.start()
-
-app.run("0.0.0.0", env["PORT"] if "PORT" in env else 3000)
-proc.join()
-save()
+if __name__ == "__main__":
+    proc_cnt: int = int(env["PROCS"]) if "PROCS" in env else 1
+    processes = [Process(target=worker) for _ in range(proc_cnt)]
+    _ = [p.start() for p in processes]
+    app.run("0.0.0.0", env["PORT"] if "PORT" in env else 3000)
+    _ = [p.join() for p in processes]
