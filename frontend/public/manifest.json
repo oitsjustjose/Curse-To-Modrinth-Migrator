@@ -1,0 +1,15 @@
+{
+  "short_name": "Curseforge to Modrinth Exporter",
+  "name": "A Migration Tool to Pull CF Files and Move Them to Modrinth!",
+  "icons": [
+    {
+      "src": "app-icon.png",
+      "type": "image/png",
+      "sizes": "128x128"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#252525",
+  "background_color": "#252525"
+}
