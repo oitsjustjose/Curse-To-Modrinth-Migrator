@@ -31,7 +31,7 @@ class Job:
 
 
 app = Flask(__name__)
-fer = Fernet(env["key"])
+fer = Fernet(env["SECRET"])
 
 
 manager = Manager()
@@ -76,7 +76,7 @@ def save():
     """Saves the current application state to an encrypted file"""
 
     data = {
-        "jobs": [asdict(x) for x in active_jobs] + [asdict(x) for x in jobs],
+        "jobs": [asdict(x) for x in jobs],
         "completed": dict(completed),
     }
     with open("./state.dat", "wb") as handle:
@@ -169,6 +169,6 @@ load()
 proc = Process(target=job_processor)
 proc.start()
 
-app.run("0.0.0.0", 3000)
+app.run("0.0.0.0", env["PORT"] if "PORT" in env else 3000)
 proc.join()
 save()
