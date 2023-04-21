@@ -9,7 +9,7 @@ from multiprocessing import Manager, Process
 from os import environ as env
 from os.path import exists
 from time import sleep
-from typing import Dict, List, Union
+from typing import List
 
 from cryptography.fernet import Fernet
 from flask import Flask, request

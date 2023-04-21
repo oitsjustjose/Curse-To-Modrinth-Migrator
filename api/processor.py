@@ -117,6 +117,8 @@ def download(slug: str) -> List[str]:
         page_num: int = 1
 
         options = Options()
+        options.add_argument("--ignore-ssl-errors=yes")
+        options.add_argument("--ignore-certificate-errors")
         options.add_experimental_option("excludeSwitches", ["enable-logging"])
         options.add_experimental_option(
             "prefs",
