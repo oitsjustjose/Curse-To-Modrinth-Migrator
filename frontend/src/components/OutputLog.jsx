@@ -15,5 +15,11 @@ export default ({ id }) => {
     return () => clearInterval(handle);
   }, [setLogs, id]);
 
-  return (<code>{logs}</code>);
+  return (
+    <code>
+      {logs.split('\n').map((log) => (
+        <p>{log}</p>
+      ))}
+    </code>
+  );
 };

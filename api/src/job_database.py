@@ -1,7 +1,9 @@
-"""DB Handling for Jobs"""
+"""
+DB Handling for Jobs
+Author: oitsjustjose @ modrinth/curseforge/twitter
+"""
 
-from dataclasses import asdict, dataclass
-from enum import Enum
+from dataclasses import asdict
 from os import environ as env
 from typing import Dict, List, Tuple, Union
 
@@ -11,28 +13,7 @@ from pymongo.collection import Collection
 from pymongo.database import Database
 from shortuuid import ShortUUID
 
-
-class Status(Enum):
-    """Job Status"""
-
-    ENQUEUED = 0
-    PROCESSING = 1
-    COMPLETED = 2
-    NOTFOUND = -1
-
-
-@dataclass
-class Job:
-    """A single job"""
-
-    github_pat: str
-    curseforge_slug: str
-    modrinth_id: str
-    job_id: str = ShortUUID().random(length=8)
-    delimiter: str = "-"
-    logs: str = ""
-    status: Status = Status.ENQUEUED
-    queue_place: int = 0
+from data import Job, Status
 
 
 class JobDb:
@@ -43,6 +24,7 @@ class JobDb:
         self._db: Database = self._client["ctmmm"]
         self._coll: Collection = self._db["jobs"]
         self._fernet = Fernet(env["SECRET"])
+        self._shrt = ShortUUID()
 
     def get_job(self, job_id: str) -> Union[Job, None]:
         """Gets a job by the job's short ID"""
@@ -54,7 +36,9 @@ class JobDb:
     def get_next_job(self) -> Union[Job, None]:
         """Gets the next job to do, if any"""
         data: List[Union[dict, None]] = list(
-            self._coll.find({"status": 0}).sort("queue_place", ASCENDING).limit(1)
+            self._coll.find({"status": Status.ENQUEUED.value})
+            .sort("queue_place", ASCENDING)
+            .limit(1)
         )
         if data:
             return self._dict_to_job(data[0])
@@ -62,21 +46,26 @@ class JobDb:
 
     def get_active_jobs(self) -> List[Job]:
         data: List[Union[dict, None]] = list(
-            self._coll.find({"status": 0}).sort("queue_place", ASCENDING).limit(1)
+            self._coll.find({"status": Status.PROCESSING.value})
+            .sort("queue_place", ASCENDING)
+            .limit(1)
         )
-        return data
+        return [self._dict_to_job(x) for x in data]
 
     def enqueue_job(self, job: Job) -> str:
         """Inserts the job, with corrected Queue Place and encrypted PAT"""
         queue_place = 0
         data: List[Union[dict, None]] = list(
-            self._coll.find({"status": 0}).sort("queue_place", DESCENDING).limit(1)
+            self._coll.find({"status": Status.ENQUEUED.value})
+            .sort("queue_place", DESCENDING)
+            .limit(1)
         )
         if data:
             queue_place = data[0]["queue_place"] + 1
         job.queue_place = queue_place
         job.github_pat = self._fernet.encrypt(job.github_pat.encode())
         job.status = job.status.value
+        job.job_id = self._shrt.random(length=8)
         self._coll.insert_one(asdict(job))
         return job.job_id
 
@@ -109,6 +98,7 @@ class JobDb:
                 "modrinth_id": proj_id,
             }
         )
+        print(data)
         if not data:
             return None
         return data["job_id"]

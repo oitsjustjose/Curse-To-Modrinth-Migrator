@@ -10,9 +10,9 @@ from os import environ as env
 
 from flask import Flask, request
 
-from db import Job, JobDb, Status
+from data import Status
+from job_database import Job, JobDb, Status
 from job_processor import worker
-
 
 app = Flask(__name__)
 
@@ -27,9 +27,9 @@ def get_job_status(job_id: str) -> str:
     if status == Status.ENQUEUED:
         return f"Enqueued: {queue} Job(s) Ahead In Queue", 200
     if status == Status.PROCESSING:
-        return f"Currently Processing!\n{logs}", 200
-    if status == Status.COMPLETED:
-        return f"Completed!\n{logs}", 200
+        return f"Currently Processing\n{logs}", 200
+    if status == Status.COMPLETE:
+        return logs, 200
     return "Failed to find job", 404
 
 
