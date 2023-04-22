@@ -1,12 +1,16 @@
+/* eslint-disable import/no-extraneous-dependencies */
 import React, { useState } from 'react';
 import {
-  Form, Button, Container, Accordion, Modal,
+  Form, Button, Container, Accordion, Image,
 } from 'react-bootstrap';
+import { TbInfoHexagon, TbHelp } from 'react-icons/tb';
 import OutputLog from '../components/OutputLog';
-import Info from '../components/Info';
+import Info from '../components/Help/Info';
+import Delimiter from '../components/Help/Delimiter';
+import HeaderImg from '../img/ctm.png';
 
 export default () => {
-  const [help, setHelp] = useState(null);
+  const [modals, setModals] = useState({ info: false, delim: false });
   const [jobId, setJobId] = useState(window.localStorage.getItem('last-jobid'));
   const [formData, setFormData] = useState({
     githubPat: '',
@@ -16,39 +20,6 @@ export default () => {
 
   // eslint-disable-next-line max-len
   const isValidState = () => !!formData.githubPat.length && !!formData.slug.length && !!formData.projId.length;
-  const delimHelp = (evt) => {
-    evt.preventDefault();
-    setHelp((
-      <div>
-        <p>
-          This is the splitter between parts of the filename. Geolosys uses format
-          {' '}
-          <code>MODNAME-MCVER-MAJOR.MINOR.PATCH</code>
-          , where
-          {' '}
-          <code>-</code>
-          {' '}
-          is the delimiter.
-        </p>
-        <p>
-          Using this logic, it is assumed that the Minecraft version for this
-          {' '}
-          <code>.jar</code>
-          -file is between the first and second delimiter, and that the mod version is between
-          the second and the end of the file. Formatting aside from this is not supported,
-          unfortunately, as I&apos;ve got a bit of trauma
-          {' '}
-          <sup>(/s)</sup>
-          {' '}
-          from
-          {' '}
-          <a href="https://dv2ls.com/code?id=lUY-c4A2H" target="_blank" rel="noreferrer">
-            this Regular Expression I wrote.
-          </a>
-        </p>
-      </div>
-    ));
-  };
 
   const makeJob = async (evt) => {
     evt.preventDefault();
@@ -68,14 +39,12 @@ export default () => {
   };
 
   return (
-    <div style={{ margin: 'auto', maxWidth: '768px' }}>
-      <h2 className="mb-4 text-center">
-        CurseForge to Modrinth Mod Migrator (CTMMM)
-      </h2>
-
-      {!window.localStorage.getItem('info-dismissed') && (<Info />)}
+    <div className="ctm-root">
+      <Info override={modals.info} propagateOnHide={() => setModals({ ...modals, info: false })} />
+      <Delimiter show={modals.delim} onHide={() => setModals({ ...modals, delim: false })} />
 
       <Container style={{ margin: '1rem auto', maxWidth: '512px' }}>
+        <Image className="d-block mb-3 mx-auto w-50 " src={HeaderImg} />
         <Form onSubmit={makeJob} className="juse-form">
           <Form.Group className="mb-3" controlId="githubPat">
             <Form.Label>GitHub Personal Access Token</Form.Label>
@@ -127,7 +96,14 @@ export default () => {
               Delimiter (Optional)
               {' '}
               {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-              <a onClick={delimHelp} style={{ textDecoration: 'none' }} href="#">❔</a>
+              <a
+                onClick={() => setModals({ ...modals, delim: true })}
+                style={{ textDecoration: 'none', fontSize: '16px' }}
+                href="#"
+                label="delimiter_help"
+              >
+                <TbHelp />
+              </a>
             </Form.Label>
             <Form.Control
               placeholder="Defaults to Hyphen (-)"
@@ -141,7 +117,7 @@ export default () => {
           </Form.Group>
 
           <Button
-            variant="success"
+            variant="dark"
             type="submit"
             disabled={!isValidState()}
           >
@@ -165,9 +141,20 @@ export default () => {
         )}
       </Container>
 
-      <Modal centered show={!!help} onHide={() => setHelp(null)}>
+      <Button
+        onClick={() => setModals({ ...modals, info: true })}
+        className="info"
+        variant="dark"
+      >
+        <TbInfoHexagon ce />
+      </Button>
+
+      {/* <Modal centered show={!!help} onHide={() => setHelp(null)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Help</Modal.Title>
+        </Modal.Header>
         <Modal.Body>{help}</Modal.Body>
-      </Modal>
+      </Modal> */}
     </div>
   );
 };

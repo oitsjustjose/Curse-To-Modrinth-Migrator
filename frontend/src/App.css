@@ -7,3 +7,33 @@
 .output-log {
   margin-top: 2rem;
 }
+
+button.info {
+  /* position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem; */
+  position: relative;
+  right: -100%;
+
+  font-size: 24px;
+  aspect-ratio: 1;
+  border-radius: 100%;
+  padding: 0.5rem !important;
+}
+
+button.info svg {
+  vertical-align: top;
+}
+
+.ctm-root {
+  margin: auto;
+  max-width: 768px;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
