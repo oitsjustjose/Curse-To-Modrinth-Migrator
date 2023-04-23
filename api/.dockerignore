@@ -1,0 +1,9 @@
+/out/
+/lib/
+/lib64
+/bin/
+
+state.dat
+filekey.key
+__pycache__
+.envrc

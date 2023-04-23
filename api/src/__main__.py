@@ -1,72 +1,79 @@
 """
-The API endpoints for the proessor
+Does the actual work behind the scenes
 Author: oitsjustjose @ modrinth/curseforge/twitter
 """
-
-import json
-from dataclasses import asdict
-from multiprocessing import Process
 from os import environ as env
+from time import sleep
 
-from flask import Flask, request
-
-from data import Status
-from job_database import Job, JobDb, Status
-from job_processor import worker
-
-app = Flask(__name__)
-
-db = JobDb(env["MONGO_URI"], int(env["MONGO_PORT"]))
+from data import Job, Status
+from job_database import JobDb
+from netio_processor import download, upload
 
 
-@app.route("/jobs/status/<job_id>", methods=["GET", "POST"])
-def get_job_status(job_id: str) -> str:
-    "Gets the queue status for a given job"
+def _resume(job_db: JobDb):
+    """Resumes processing jobs on server restart"""
+    print("Resuming jobs from last run")
 
-    status, logs, queue = db.get_job_status(job_id)
-    if status == Status.ENQUEUED:
-        return f"Enqueued: {queue} Job(s) Ahead In Queue", 200
-    if status == Status.PROCESSING:
-        return f"Currently Processing\n{logs}", 200
-    if status == Status.COMPLETE:
-        return logs, 200
-    return "Failed to find job", 404
-
-
-@app.route("/jobs/info/<job_id>", methods=["GET", "POST"])
-def get_job_info(job_id: str):
-    """Gets the job info for a given uuid"""
-    job = db.get_job(job_id)
-    if not job:
-        return "Failed to find job", 404
-    job.github_pat = ""
-    return json.dumps(asdict(job), indent=2), 200
-
-
-@app.route("/jobs/new", methods=["POST"])
-def new_job():
-    """Creates a new job"""
-    try:
-        data = json.loads(request.data)
-        jobe = Job(
-            github_pat=data["githubPat"],
-            curseforge_slug=data["slug"],
-            modrinth_id=data["projId"],
-            delimiter=data["delimiter"] if "delimiter" in data else "-",
+    for job in job_db.get_active_jobs():
+        print(f"Resuming job {job.job_id}")
+        job_db.update_job_status(job.job_id, Status.PROCESSING)
+        dl_status, dl_logs = download(job.curseforge_slug)
+        if dl_status == Status.FAIL:  # Failed - early exit, update DB for user
+            job_db.update_job_status(
+                job.job_id, Status.COMPLETE, "\n".join(["**FAILED**"] + dl_logs)
+            )
+            continue
+        # Didn't fail, update DB with latest logs and same status
+        job_db.update_job_status(job.job_id, Status.PROCESSING, "\n".join(dl_logs))
+        ul_status, ul_logs = upload(
+            job.github_pat, job.curseforge_slug, job.modrinth_id, job.delimiter
+        )
+        # Take the higher severity - it would only be
+        text_status = Status(max(dl_status.value, ul_status.value)).name
+        job_db.update_job_status(
+            job.job_id,
+            Status.COMPLETE,
+            "\n".join([f"**{text_status}**"] + ul_logs + dl_logs),
         )
 
-        # Job already exists in queue, give it back
-        existing = db.get_existing_queued_job(jobe.curseforge_slug, jobe.modrinth_id)
-        if existing:
-            return existing, 200
-        return db.enqueue_job(jobe), 200
-    except:
-        return "Internal Server Error", 500
+
+def _work(job_db: JobDb) -> bool:
+    """Does the actual lifting"""
+    job: Job = job_db.get_next_job()
+    if not job:
+        return False
+
+    job_db.update_job_status(job.job_id, Status.PROCESSING)
+    dl_status, dl_logs = download(job.curseforge_slug)
+    if dl_status == Status.FAIL:  # Failed - early exit, update DB for user
+        job_db.update_job_status(
+            job.job_id, Status.COMPLETE, "\n".join(["**FAILED**"] + dl_logs)
+        )
+        return True
+    # Didn't fail, update DB with latest logs and same status
+    job_db.update_job_status(job.job_id, Status.PROCESSING, "\n".join(dl_logs))
+    ul_status, ul_logs = upload(
+        job.github_pat, job.curseforge_slug, job.modrinth_id, job.delimiter
+    )
+    # Take the higher severity - it would only be
+    text_status = Status(max(dl_status.value, ul_status.value)).name
+    job_db.update_job_status(
+        job.job_id,
+        Status.COMPLETE,
+        "\n".join([f"**{text_status}**"] + ul_logs + dl_logs),
+    )
+    return True
 
 
 if __name__ == "__main__":
-    proc_cnt: int = int(env["PROCS"]) if "PROCS" in env else 1
-    processes = [Process(target=worker) for _ in range(proc_cnt)]
-    _ = [p.start() for p in processes]
-    app.run("0.0.0.0", env["PORT"] if "PORT" in env else 3000)
-    _ = [p.join() for p in processes]
+    print("Starting the job processor")
+    job_db = JobDb(env["MONGO_URI"], int(env["MONGO_PORT"]))
+    _resume(job_db)
+    while True:
+        try:
+            if _work(job_db):
+                sleep(1)
+            else:
+                sleep(5)
+        except KeyboardInterrupt:
+            break

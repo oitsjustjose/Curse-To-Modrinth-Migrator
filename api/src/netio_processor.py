@@ -15,7 +15,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
-
+from pyvirtualdisplay import Display
 from data import ModInfo, Status
 
 
@@ -239,7 +239,11 @@ def download(slug: str) -> Tuple[Status, List[str]]:
     os.makedirs(f"./out/{slug}", exist_ok=True)
 
     # REGION CHROME DRIVER AND OPTIONS
+    display = Display(visible=0, size=(1366, 768))
+    display.start()
+
     options = Options()
+    options.add_argument("--no-sandbox")
     options.add_argument("--ignore-ssl-errors=yes")
     options.add_argument("--ignore-certificate-errors")
     options.add_experimental_option("excludeSwitches", ["enable-logging"])
@@ -276,4 +280,6 @@ def download(slug: str) -> Tuple[Status, List[str]]:
         else Status.FAIL
     )
 
+    display.stop()
+    driver.close()
     return status, logs
