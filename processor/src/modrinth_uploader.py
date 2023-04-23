@@ -115,7 +115,7 @@ class ModrinthUploader(DbLogger):
             else:
                 statuses.append(Status.FAIL)
                 self.logmsg("----- FILE {fpath} -----")
-                self.logmsg("API Response from Modrinth FAIL for {fpath}:")
+                self.logmsg(f"API Response from Modrinth FAIL for {fpath}:")
                 if response.text:  # Add text if exists
                     self.logmsg(response.text)
                 data = response.json()
