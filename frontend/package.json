@@ -30,7 +30,7 @@
     "eslint-plugin-react": "^7.21.4",
     "eslint-plugin-react-hooks": "^4.1.2"
   },
-  "proxy": "http://localhost:3000",
+  "proxy": "http://localhost:3030",
   "browserslist": {
     "production": [
       ">0.2%",

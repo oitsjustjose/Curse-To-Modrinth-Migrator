@@ -14,12 +14,12 @@ export default () => {
   const [jobId, setJobId] = useState(window.localStorage.getItem('last-jobid'));
   const [formData, setFormData] = useState({
     githubPat: '',
-    slug: '',
-    projId: '',
+    curseforgeSlug: '',
+    modrinthId: '',
   });
 
   // eslint-disable-next-line max-len
-  const isValidState = () => !!formData.githubPat.length && !!formData.slug.length && !!formData.projId.length;
+  const isValidState = () => !!formData.githubPat.length && !!formData.curseforgeSlug.length && !!formData.modrinthId.length;
 
   const makeJob = async (evt) => {
     evt.preventDefault();
@@ -69,10 +69,10 @@ export default () => {
               type="text"
               required
               placeholder="This field is required"
-              value={formData.slug}
+              value={formData.curseforgeSlug}
               onChange={(x) => setFormData({
                 ...formData,
-                slug: x.target.value,
+                curseforgeSlug: x.target.value,
               })}
             />
           </Form.Group>
@@ -83,10 +83,10 @@ export default () => {
               type="text"
               required
               placeholder="This field is required"
-              value={formData.projId}
+              value={formData.modrinthId}
               onChange={(x) => setFormData({
                 ...formData,
-                projId: x.target.value,
+                modrinthId: x.target.value,
               })}
             />
           </Form.Group>

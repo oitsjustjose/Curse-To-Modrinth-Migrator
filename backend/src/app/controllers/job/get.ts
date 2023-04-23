@@ -8,7 +8,7 @@ export default async (req: Request, res: Response) => {
       return res.status(403).send("URL Param for Job ID is required");
     }
 
-    const job = await Jobs.findOne({ job_id: req.params.jobId });
+    const job = await Jobs.findOne({ jobId: req.params.jobId });
     if (!job) {
       return res
         .status(404)

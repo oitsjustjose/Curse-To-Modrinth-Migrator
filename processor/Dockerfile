@@ -9,15 +9,17 @@ RUN apt-get install -y libasound2 \
     unzip \
     libappindicator1 \
     fonts-liberation \
-    xvfb \
     libatk-bridge2.0-0 \
     libatspi2.0-0 \
     libgbm1 \
     libgtk-3-0 \
     libu2f-udev \
     libvulkan1 \
-    libxkbcommon0
+    libxkbcommon0 \
+    xvfb 
 RUN apt-get -f install
+
+# # Install Google Chrome
 RUN wget http://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 RUN dpkg -i google-chrome*.deb && rm google-chrome*.deb
 
@@ -30,4 +32,8 @@ COPY . .
 
 RUN pip install -r requirements.txt
 
-CMD ["python", "src/__main__.py"]
+ENV MONGO_URI ""
+ENV MONGO_PORT 0
+ENV SECRET ""
+
+CMD ["python", "./src/main.py"]
