@@ -9,8 +9,10 @@ from data import Job, Status
 from job_database import JobDb
 from netio_processor import download, upload
 
+job_db = JobDb(env["MONGO_URI"], int(env["MONGO_PORT"]))
 
-def _resume(job_db: JobDb):
+
+def _resume():
     """Resumes processing jobs on server restart"""
     print("Resuming jobs from last run")
 
@@ -37,7 +39,7 @@ def _resume(job_db: JobDb):
         )
 
 
-def _work(job_db: JobDb) -> bool:
+def _work() -> bool:
     """Does the actual lifting"""
     job: Job = job_db.get_next_job()
     if not job:
@@ -67,13 +69,13 @@ def _work(job_db: JobDb) -> bool:
 
 if __name__ == "__main__":
     print("Starting the job processor")
-    job_db = JobDb(env["MONGO_URI"], int(env["MONGO_PORT"]))
-    _resume(job_db)
+    _resume()
     while True:
         try:
-            if _work(job_db):
+            if _work():
                 sleep(1)
             else:
                 sleep(5)
         except KeyboardInterrupt:
+            print("Quitting..")
             break

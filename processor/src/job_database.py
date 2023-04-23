@@ -28,7 +28,7 @@ class JobDb:
 
     def get_job(self, job_id: str) -> Union[Job, None]:
         """Gets a job by the job's short ID"""
-        data: Union[dict, None] = self._coll.find_one({"job_id": job_id})
+        data: Union[dict, None] = self._coll.find_one({"jobId": job_id})
         if not data:
             return None
         return self._dict_to_job(data)
@@ -37,7 +37,7 @@ class JobDb:
         """Gets the next job to do, if any"""
         data: List[Union[dict, None]] = list(
             self._coll.find({"status": Status.ENQUEUED.value})
-            .sort("queue_place", ASCENDING)
+            .sort("queuePlace", ASCENDING)
             .limit(1)
         )
         if data:
@@ -45,10 +45,11 @@ class JobDb:
         return None
 
     def get_active_jobs(self) -> List[Job]:
+        """Gets all active jobs - only used for resuming between restarts"""
         data: List[Union[dict, None]] = list(
-            self._coll.find({"status": Status.PROCESSING.value})
-            .sort("queue_place", ASCENDING)
-            .limit(1)
+            self._coll.find({"status": Status.PROCESSING.value}).sort(
+                "queuePlace", ASCENDING
+            )
         )
         return [self._dict_to_job(x) for x in data]
 
@@ -57,11 +58,11 @@ class JobDb:
         queue_place = 0
         data: List[Union[dict, None]] = list(
             self._coll.find({"status": Status.ENQUEUED.value})
-            .sort("queue_place", DESCENDING)
+            .sort("queuePlace", DESCENDING)
             .limit(1)
         )
         if data:
-            queue_place = data[0]["queue_place"] + 1
+            queue_place = data[0]["queuePlace"] + 1
         job.queue_place = queue_place
         job.github_pat = self._fernet.encrypt(job.github_pat.encode())
         job.status = job.status.value
@@ -76,17 +77,17 @@ class JobDb:
         update = {"status": status.value}
         if logs:
             update["logs"] = logs
-        self._coll.update_one({"job_id": job_id}, {"$set": update})
+        self._coll.update_one({"jobId": job_id}, {"$set": update})
 
     def get_job_status(self, job_id: str) -> Tuple[Status, str, int]:
         """Gets the status of a job, including queue place and logs"""
-        data: Union[dict, None] = self._coll.find_one({"job_id": job_id})
+        data: Union[dict, None] = self._coll.find_one({"jobId": job_id})
         if not data:
             return (Status.NOTFOUND, [], -1)
         return (
             Status(data["status"]),
             data["logs"],
-            data["queue_place"],
+            data["queuePlace"],
         )
 
     def get_existing_queued_job(self, slug: str, proj_id: str) -> Union[str, None]:
@@ -94,24 +95,24 @@ class JobDb:
         data: Union[dict, None] = self._coll.find_one(
             {
                 "status": Status.ENQUEUED.value,
-                "curseforge_slug": slug,
-                "modrinth_id": proj_id,
+                "curseforgeSlug": slug,
+                "modrinthId": proj_id,
             }
         )
         print(data)
         if not data:
             return None
-        return data["job_id"]
+        return data["jobId"]
 
     def _dict_to_job(self, data: Dict) -> Job:
         """Converts a dictionary (from mongo) into a Job"""
         return Job(
-            github_pat=self._fernet.decrypt(data["github_pat"].decode()),
-            curseforge_slug=data["curseforge_slug"],
-            modrinth_id=data["modrinth_id"],
+            github_pat=self._fernet.decrypt(data["githubPat"].decode()),
+            curseforge_slug=data["curseforgeSlug"],
+            modrinth_id=data["modrinthId"],
             logs=data["logs"] if "logs" in data else [],
-            job_id=data["job_id"],
+            job_id=data["jobId"],
             delimiter=data["delimiter"] if "delimiter" in data else "-",
             status=data["status"],
-            queue_place=data["queue_place"],
+            queue_place=data["queuePlace"],
         )

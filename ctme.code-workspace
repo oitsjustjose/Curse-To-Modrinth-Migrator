@@ -1,11 +1,14 @@
 {
-	"folders": [
-		{
-			"path": "frontend"
-		},
-		{
-			"path": "api"
-		}
-	],
+  "folders": [
+    {
+      "path": "frontend"
+    },
+    {
+      "path": "backend"
+    },
+    {
+      "path": "processor"
+    }
+  ],
   "settings": {}
 }

@@ -2,8 +2,8 @@
   "emeraldwalk.runonsave": {
     "commands": [
       {
-        "match": "api/\\.py$",
-        "cmd": "./api/bin/isort \"${file}\""
+        "match": "\\.py$",
+        "cmd": "./processor/bin/isort \"${file}\""
       }
     ]
   }

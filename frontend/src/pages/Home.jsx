@@ -25,8 +25,8 @@ export default () => {
     evt.preventDefault();
     if (!isValidState()) return;
 
-    const resp = await fetch('/jobs/new', {
-      method: 'POST',
+    const resp = await fetch('/api/v1/jobs', {
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formData),
     });

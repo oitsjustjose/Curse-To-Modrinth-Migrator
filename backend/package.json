@@ -1,0 +1,28 @@
+{
+  "name": "ctmmm-api",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^1.20.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.1",
+    "fernet-nodejs": "^1.0.4",
+    "moment": "^2.29.3",
+    "mongoose": "^7.0.0",
+    "shortid": "^2.2.16"
+  },
+  "devDependencies": {
+    "@types/body-parser": "^1.19.2",
+    "@types/cors": "^2.8.12",
+    "@types/express": "^4.17.13",
+    "@types/shortid": "^0.0.29",
+    "typescript": "^4.7.4"
+  },
+  "scripts": {
+    "start:live": "yarn run ts:build; concurrently -k -p \"[{name}]\" -n \"TypeScript,Node\" -c \"cyan.bold,green.bold\" \"yarn run ts:watch\" \"yarn run start:serve\"",
+    "start:serve": "nodemon --inspect dist/server.js",
+    "ts:build": "tsc",
+    "ts:watch": "tsc -w"
+  }
+}
