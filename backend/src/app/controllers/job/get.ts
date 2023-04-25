@@ -5,7 +5,7 @@ import Status from "../../status";
 export default async (req: Request, res: Response) => {
   try {
     if (!req.params.jobId) {
-      return res.status(403).send("URL Param for Job ID is required");
+      return res.status(400).send("URL Param for Job ID is required");
     }
 
     const job = await Jobs.findOne({ jobId: req.params.jobId });

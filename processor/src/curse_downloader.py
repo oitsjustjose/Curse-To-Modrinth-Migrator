@@ -1,3 +1,7 @@
+"""
+Downloads mod files from Curse
+Author: oitsjustjose @ modrinth/curseforge/twitter
+"""
 import os
 from time import sleep
 from typing import List
@@ -9,22 +13,22 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 
-from common import DbLogger, Job, Status
-from job_database import JobDb
+from common import Job, Status
+from mgmt_tools import MgmtApiHelper, MgmtApiLogger
 
 
-class CurseDownloader(DbLogger):
+class CurseDownloader(MgmtApiLogger):
     """
     The class for handling curse downloads
     Args:
-        db (JobDb): the job database
+        helper (MgmtApiHelper): the job database
         job_id (str): the job id for the given job
     """
 
-    def __init__(self, db: JobDb, job: Job):
-        super().__init__(db, job.job_id)
+    def __init__(self, helper: MgmtApiHelper, job: Job):
+        super().__init__(helper, job.job_id)
         self._slug = job.curseforge_slug
-        self._job_db = db
+        self._helper = helper
         self._job_id = job.job_id
         # REGION CHROME DRIVER AND OPTIONS
         options = Options()
@@ -50,7 +54,7 @@ class CurseDownloader(DbLogger):
     def download(self) -> Status:
         """
         Downloads all mod files for a given slug
-        Returns: (Tuple[Status, List[str]]): The status and logs, if any
+        Returns: (Status): The status of the download
         """
         root = f"https://legacy.curseforge.com/minecraft/mc-mods/{self._slug}/files/all"
         os.makedirs(f"./out/{self._slug}", exist_ok=True)

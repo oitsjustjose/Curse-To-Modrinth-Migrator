@@ -8,44 +8,45 @@ from time import sleep
 
 from common import Job, Status
 from curse_downloader import CurseDownloader
-from job_database import JobDb
+from mgmt_tools import MgmtApiHelper
 from modrinth_uploader import ModrinthUploader
 
 
-def _process(job_db: JobDb, job: Job):
+def _process(helper: MgmtApiHelper, job: Job):
     """Handles the download and upload process for a single job"""
-    job_db.update_job_status(job.job_id, Status.PROCESSING)
+    helper.update_job_status(job.job_id, Status.PROCESSING)
 
-    downloader = CurseDownloader(job_db, job)
+    downloader = CurseDownloader(helper, job)
     dls = downloader.download()
     if dls == Status.FAIL:
-        job_db.update_job_status(job.job_id, Status.COMPLETE)
-        job_db.append_job_log(job.job_id, "***FAILED***")
+        helper.update_job_status(job.job_id, Status.COMPLETE)
+        helper.append_job_log(job.job_id, "***FAILED***")
         return
 
-    uploader = ModrinthUploader(job_db, job)
+    uploader = ModrinthUploader(helper, job)
     uls = uploader.upload()
 
     stat = Status(max(dls.value, uls.value)).name
-    job_db.update_job_status(job.job_id, Status.COMPLETE)
-    job_db.append_job_log(job.job_id, f"***{stat}***")
+    helper.update_job_status(job.job_id, Status.COMPLETE)
+    helper.append_job_log(job.job_id, f"***{stat}***")
 
 
-def _resume(job_db: JobDb):
+def _resume(helper: MgmtApiHelper):
     """Resumes processing jobs on server restart"""
     print("Resuming jobs from last run")
 
-    for job in job_db.get_active_jobs():
+    for job in helper.get_resumable_jobs():
         print(f"Resuming job {job.job_id}")
-        _process(job_db, job)
+        _process(helper, job)
 
 
-def _work(job_db: JobDb) -> bool:
+def _work(helper: MgmtApiHelper) -> bool:
     """Does the actual lifting"""
-    job: Job = job_db.get_next_job()
+    sleep(2)  # Sleep to make sure DB processing is done
+    job: Job = helper.get_next_job()
     if not job:
         return False
-    _process(job_db, job)
+    _process(helper, job)
     return True
 
 
@@ -53,10 +54,7 @@ def main_loop():
     """The main process loop"""
 
     print("Init DB connection")
-    job_db = JobDb(
-        env["MONGO_URI"] if "MONGO_URI" in env else "localhost",
-        int(env["MONGO_PORT"]) if "MONGO_PORT" in env else 27017,
-    )
+    helper = MgmtApiHelper()
     print("DB Connected")
 
     print("Starting virtual display")
@@ -65,10 +63,10 @@ def main_loop():
     print("Done initializing VDisplay")
 
     print("Starting the job processor")
-    _resume(job_db)
+    _resume(helper)
     while True:
         try:
-            if _work(job_db):
+            if _work(helper):
                 sleep(1)
             else:
                 sleep(5)

@@ -5,7 +5,7 @@ export default ({ id }) => {
 
   useEffect(() => {
     const handle = setInterval(async () => {
-      const resp = await fetch(`/api/v1/jobs/${id}`, { method: 'POST' });
+      const resp = await fetch(`/api/v1/jobs/${id}`);
       if (resp.status < 500) {
         setLogs(await resp.text());
       } else {

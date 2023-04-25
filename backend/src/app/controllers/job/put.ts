@@ -5,7 +5,7 @@ import { Fernet } from "fernet-nodejs";
 
 const getNextQueuePlace = async () => {
   const allActiveJobs = await Job.find({ status: Status.ENQUEUED }).sort({
-    queue_place: "desc",
+    queuePlace: "desc",
   });
   if (allActiveJobs.length) {
     return allActiveJobs[0].queuePlace + 1;

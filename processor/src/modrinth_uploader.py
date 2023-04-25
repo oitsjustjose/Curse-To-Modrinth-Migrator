@@ -1,5 +1,5 @@
 """
-Performs upload/download operations
+Uploads mod files to Modrinth
 Author: oitsjustjose @ modrinth/curseforge/twitter
 """
 import json
@@ -9,13 +9,20 @@ from typing import List, Union
 
 import requests
 
-from common import DbLogger, Job, ModInfo, Status
-from job_database import JobDb
+from common import Job, ModInfo, Status
+from mgmt_tools import MgmtApiHelper, MgmtApiLogger
 
 
-class ModrinthUploader(DbLogger):
-    def __init__(self, job_db: JobDb, job: Job):
-        super().__init__(job_db, job.job_id)
+class ModrinthUploader(MgmtApiLogger):
+    """
+    Handles uploading jar files to Modrinth
+    Args:
+        helper (MgmtApiHelper): the current mongo instance for the Job DB
+        job (Job): the job to process
+    """
+
+    def __init__(self, helper: MgmtApiHelper, job: Job):
+        super().__init__(helper, job.job_id)
         self._job = job
 
     def __get_versions(self, parts: List[str]) -> List[str]:
@@ -81,8 +88,8 @@ class ModrinthUploader(DbLogger):
 
             payload = json.dumps(
                 {
-                    "name": mod_info.name,
-                    "version_number": mod_info.modrinth_name,
+                    "name": mod_info.modrinth_name,
+                    "version_number": mod_info.mod_version,
                     "changelog": "Migrated Automagically from CurseForge",
                     "dependencies": [],
                     "game_versions": mod_info.game_versions,
@@ -114,7 +121,7 @@ class ModrinthUploader(DbLogger):
                 statuses.append(Status.SUCCESS)
             else:
                 statuses.append(Status.FAIL)
-                self.logmsg("----- FILE {fpath} -----")
+                self.logmsg(f"----- FILE {fpath} -----")
                 self.logmsg(f"API Response from Modrinth FAIL for {fpath}:")
                 if response.text:  # Add text if exists
                     self.logmsg(response.text)
@@ -131,5 +138,5 @@ class ModrinthUploader(DbLogger):
             if any_succ and not any_fail
             else Status.FAIL
         )
-        rmtree(f"./out/{self._job.github_pat}")
+        rmtree(f"./out/{self._job.curseforge_slug}")
         return status

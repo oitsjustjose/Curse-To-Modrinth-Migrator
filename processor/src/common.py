@@ -1,5 +1,5 @@
 """
-Houses data classes
+Houses commonly used dataclasses and Enums
 Author: oitsjustjose @ modrinth/curseforge/twitter
 """
 from dataclasses import dataclass
@@ -42,23 +42,3 @@ class ModInfo:
     modrinth_name: str
     game_version: str  # representative game ver
     game_versions: List[str]  # actual game vers
-
-
-class DbLogger:
-    """
-    A base class for Upload and Download that indicates how to log
-    Args:
-        db (JobDb): the job database
-        job_id (str): the job id for the given job
-    """
-
-    def __init__(self, db, job_id: str):
-        self._db = db
-        self._job_id = job_id
-
-    def logmsg(self, msg: str) -> None:
-        """
-        Logs a message to the database
-        Args: msg(str): the message to log
-        """
-        self._db.append_job_log(self._job_id, msg)
