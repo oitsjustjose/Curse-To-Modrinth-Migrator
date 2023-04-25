@@ -24,22 +24,32 @@ class MgmtApiHelper:
 
     def get_next_job(self) -> Union[Job, None]:
         """Gets the next job to do, if any"""
-        resp = requests.get(
-            f"{self._mgmt_host}/api/v1/mgmt/dequeue?mgmtKey={self._mgmt_key}",
-            timeout=self._mgmt_timeout,
-        )
-        # 404 response is for if there's nothing to dequeue
-        if resp.status_code == 404:
+        try:
+            resp = requests.get(
+                f"{self._mgmt_host}/api/v1/mgmt/dequeue?mgmtKey={self._mgmt_key}",
+                timeout=self._mgmt_timeout,
+            )
+            # 404 response is for if there's nothing to dequeue
+            if resp.status_code == 404:
+                return None
+            return self._dict_to_job(resp.json())
+        except requests.exceptions.ConnectionError as exc:
+            print("Failed to get next job:")
+            print(exc)
             return None
-        return self._dict_to_job(resp.json())
 
     def get_resumable_jobs(self) -> List[Job]:
         """Gets all active jobs - only used for resuming between restarts"""
-        resp = requests.get(
-            f"{self._mgmt_host}/api/v1/mgmt/resumable?mgmtKey={self._mgmt_key}",
-            timeout=self._mgmt_timeout,
-        )
-        return [self._dict_to_job(x) for x in resp.json()]
+        try:
+            resp = requests.get(
+                f"{self._mgmt_host}/api/v1/mgmt/resumable?mgmtKey={self._mgmt_key}",
+                timeout=self._mgmt_timeout,
+            )
+            return [self._dict_to_job(x) for x in resp.json()]
+        except requests.exceptions.ConnectionError as exc:
+            print("Failed to get resumable jobs:")
+            print(exc)
+            return []
 
     def _dict_to_job(self, data: Dict) -> Job:
         """Converts a dictionary (from mongo) into a Job"""
@@ -58,19 +68,27 @@ class MgmtApiHelper:
 
     def update_job_status(self, job_id: str, status: Status) -> None:
         """Updates the status of a job"""
-        requests.patch(
-            f"{self._mgmt_host}/api/v1/mgmt/update/{job_id}?mgmtKey={self._mgmt_key}",
-            timeout=self._mgmt_timeout,
-            data={"status": status.value},
-        )
+        try:
+            requests.patch(
+                f"{self._mgmt_host}/api/v1/mgmt/update/{job_id}?mgmtKey={self._mgmt_key}",
+                timeout=self._mgmt_timeout,
+                data={"status": status.value},
+            )
+        except requests.exceptions.ConnectionError as exc:
+            print(f"Failed to update the status of job {job_id}:")
+            print(exc)
 
     def append_job_log(self, job_id: str, newlog: str) -> None:
         """Appends to the logs for a job"""
-        requests.patch(
-            f"{self._mgmt_host}/api/v1/mgmt/update/{job_id}?mgmtKey={self._mgmt_key}",
-            timeout=self._mgmt_timeout,
-            data={"log": newlog},
-        )
+        try:
+            requests.patch(
+                f"{self._mgmt_host}/api/v1/mgmt/update/{job_id}?mgmtKey={self._mgmt_key}",
+                timeout=self._mgmt_timeout,
+                data={"log": newlog},
+            )
+        except requests.exceptions.ConnectionError as exc:
+            print(f"Failed to update the status of job {job_id}:")
+            print(exc)
 
 
 class MgmtApiLogger:
