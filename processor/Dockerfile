@@ -32,8 +32,7 @@ COPY . .
 
 RUN pip install -r requirements.txt
 
-ENV MONGO_URI ""
-ENV MONGO_PORT 0
 ENV SECRET ""
+ENV MGMT_KEY ""
 
-CMD ["python", "./src/main.py"]
+CMD ["python", "src/__main__.py"]
