@@ -83,8 +83,6 @@ class CurseDownloader(MgmtApiLogger):
             else Status.FAIL
         )
 
-        self._driver.close()
-        self._driver.quit()
         return status
 
     def __download_files(self, all_urls: List[str]) -> List[Status]:
