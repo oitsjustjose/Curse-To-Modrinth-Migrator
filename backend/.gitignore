@@ -27,3 +27,4 @@ yarn.lock
 
 .vscode/
 .vscode/*
+.envrc
