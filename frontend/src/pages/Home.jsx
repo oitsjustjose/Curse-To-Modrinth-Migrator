@@ -38,9 +38,9 @@ export default () => {
 
   const makeJob = async (evt) => {
     evt.preventDefault();
-    if (!formData.githubPat.length()) return;
-    if (!formData.curseforgeSlug.length()) return;
-    if (!formData.modrinthId.length()) return;
+    if (!formData.githubPat.length) return;
+    if (!formData.curseforgeSlug.length) return;
+    if (!formData.modrinthId.length) return;
 
     const resp = await fetch('/api/v1/jobs', {
       method: 'PUT',
