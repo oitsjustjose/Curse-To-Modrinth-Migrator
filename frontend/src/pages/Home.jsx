@@ -1,5 +1,5 @@
 /* eslint-disable import/no-extraneous-dependencies */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Form, Button, Container, Accordion, Image,
 } from 'react-bootstrap';
@@ -10,6 +10,7 @@ import Delimiter from '../components/Help/Delimiter';
 import HeaderImg from '../img/ctm.png';
 
 export default () => {
+  const [dark, setDark] = useState(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const [modals, setModals] = useState({ info: false, delim: false });
   const [jobId, setJobId] = useState(window.localStorage.getItem('last-jobid'));
   const [formData, setFormData] = useState({
@@ -18,12 +19,28 @@ export default () => {
     modrinthId: '',
   });
 
-  // eslint-disable-next-line max-len
-  const isValidState = () => !!formData.githubPat.length && !!formData.curseforgeSlug.length && !!formData.modrinthId.length;
+  useEffect(() => { // DARK MODE STUFF HERE
+    // Set initial state before even bothering with the update state
+    window.document.scrollingElement.setAttribute('data-bs-theme', dark ? 'dark' : 'light');
+
+    const pref = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = (query) => {
+      window.document.scrollingElement.setAttribute(
+        'data-bs-theme',
+        query.matches ? 'dark' : 'light',
+      );
+      setDark(query.matches);
+    };
+
+    pref.addEventListener('change', onChange);
+    return () => pref.removeEventListener('change', onChange);
+  }, [dark, setDark]);
 
   const makeJob = async (evt) => {
     evt.preventDefault();
-    if (!isValidState()) return;
+    if (!formData.githubPat.length()) return;
+    if (!formData.curseforgeSlug.length()) return;
+    if (!formData.modrinthId.length()) return;
 
     const resp = await fetch('/api/v1/jobs', {
       method: 'PUT',
@@ -44,7 +61,23 @@ export default () => {
       <Delimiter show={modals.delim} onHide={() => setModals({ ...modals, delim: false })} />
 
       <Container style={{ margin: '1rem auto', maxWidth: '512px' }}>
-        <Image className="d-block mb-3 mx-auto w-50 " src={HeaderImg} />
+        <Image className="d-block mb-3 mx-auto w-50 headerimg" src={HeaderImg} />
+        <p className="text-center" style={{ fontSize: '1.25rem' }}>
+          <b>C</b>
+          urse
+          {' '}
+          <b>T</b>
+          o
+          {' '}
+          <b>M</b>
+          odrinth
+          {' '}
+          <b>M</b>
+          od
+          {' '}
+          <b>M</b>
+          igrator
+        </p>
         <Form onSubmit={makeJob} className="juse-form">
           <Form.Group className="mb-3" controlId="githubPat">
             <Form.Label>GitHub Personal Access Token</Form.Label>
@@ -116,12 +149,14 @@ export default () => {
             />
           </Form.Group>
 
+          <Button variant={dark ? 'light' : 'dark'} type="submit">Submit</Button>
           <Button
-            variant="dark"
-            type="submit"
-            disabled={!isValidState()}
+            className="info"
+            onClick={() => setModals({ ...modals, info: true })}
+            variant={dark ? 'light' : 'dark'}
+            type="button"
           >
-            Submit
+            <TbInfoHexagon />
           </Button>
         </Form>
 
@@ -141,20 +176,11 @@ export default () => {
         )}
       </Container>
 
-      <Button
-        onClick={() => setModals({ ...modals, info: true })}
-        className="info"
-        variant="dark"
-      >
-        <TbInfoHexagon ce />
-      </Button>
+      {/* <Button
 
-      {/* <Modal centered show={!!help} onHide={() => setHelp(null)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Help</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>{help}</Modal.Body>
-      </Modal> */}
+        className="info"
+        variant="light"
+      /> */}
     </div>
   );
 };
