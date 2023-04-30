@@ -15,12 +15,12 @@ class MgmtApiHelper:
     """An API Helper for the Job API"""
 
     def __init__(self):
-        self._mgmt_timeout = 30
+        self._mgmt_timeout = 5
         self._mgmt_host = env["MGMT_HOST"]
         self._mgmt_key = env["MGMT_KEY"]
         self._fernet = Fernet(env["SECRET"])
 
-    # REGION NON JOB-SPECIFIC METHODS
+    # region NON JOB-SPECIFIC METHODS
 
     def get_next_job(self) -> Union[Job, None]:
         """Gets the next job to do, if any"""
@@ -63,7 +63,7 @@ class MgmtApiHelper:
             queue_place=data["queuePlace"],
         )
 
-    # ENDREGION NON JOB-SPECIFIC METHODS
+    # endregion NON JOB-SPECIFIC METHODS
 
     def update_job_status(self, job_id: str, status: Status) -> None:
         """Updates the status of a job"""
@@ -85,9 +85,10 @@ class MgmtApiHelper:
                 timeout=self._mgmt_timeout,
                 data={"log": newlog},
             )
+        except requests.exceptions.ReadTimeout as exc:
+            print(f"Timed out updating the status of job {job_id}:\n{exc}")
         except requests.exceptions.ConnectionError as exc:
-            print(f"Failed to update the status of job {job_id}:")
-            print(exc)
+            print(f"Failed to update the status of job {job_id}:\n{exc}")
 
 
 class MgmtApiLogger:

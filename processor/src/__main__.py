@@ -7,64 +7,36 @@ from os import system as run
 from time import sleep
 
 from common import Job, Status
-from curse_downloader import CurseDownloader
 from mgmt_tools import MgmtApiHelper
-from modrinth_uploader import ModrinthUploader
-
-
-def _download(helper: MgmtApiHelper, job: Job, retries=0) -> Status:
-    """Performs function - returns True if success, False otherwise"""
-    try:
-        downloader = CurseDownloader(helper, job)
-        status = downloader.download()
-        if status == Status.FAIL:
-            helper.update_job_status(job.job_id, Status.COMPLETE)
-            helper.append_job_log(job.job_id, "***FAILED***")
-        return status
-    except Exception as exc:
-        helper.update_job_status(job, Status.ENQUEUED)
-        helper.append_job_log(
-            job,
-            f"Download Error: {exc}. Restarting Download.. ({3-retries} retries left)",
-        )
-        print(exc)
-        if retries <= 3:
-            sleep(10)
-            return _download(helper, job, retries=retries + 1)
-    return Status.FAIL
-
-
-def _upload(helper: MgmtApiHelper, job: Job, retries=0) -> Status:
-    """Performs function - returns True if success, False otherwise"""
-    try:
-        uploader = ModrinthUploader(helper, job)
-        status = uploader.upload()
-        return status
-    except Exception as exc:
-        helper.update_job_status(job, Status.ENQUEUED)
-        helper.append_job_log(
-            job,
-            f"Upload Error: {exc}. Restarting Upload.. ({3-retries} retries left)",
-        )
-        if retries <= 3:
-            sleep(10)
-            return _upload(helper, job, retries=retries + 1)
-    return Status.FAIL
+from x_fast_provider import FastProvider
+from x_slow_provider import SlowProvider
 
 
 def process_job(helper: MgmtApiHelper, job: Job):
     """Handles the download and upload process for a single job"""
     helper.update_job_status(job.job_id, Status.PROCESSING)
 
-    download_status = _download(helper, job)
-    if download_status == Status.FAIL:
+    # Try to use the fast provider first
+    fast_prov = FastProvider(helper, job)
+    if fast_prov.supports_downloads():
+        helper.append_job_log(
+            job.job_id,
+            f"ℹ️ Mod {job.curseforge_slug} supports third-party launchers, migration will be quick 🙂",
+        )
+        status = fast_prov.process()
+        helper.update_job_status(job.job_id, Status.COMPLETE)
+        helper.append_job_log(job.job_id, f"***{status.name}***")
         return
 
-    upload_status = _upload(helper, job)
-
-    status = Status(max(download_status.value, upload_status.value)).name
+    # Otherwise use the slow provider since you're a goblin 👺
+    slow_prov = SlowProvider(helper, job)
+    helper.append_job_log(
+        job.job_id,
+        f"ℹ️ Mod {job.curseforge_slug} does not support third-party launchers, migration will be slowed by workarounds 😭",
+    )
+    status = slow_prov.process()
     helper.update_job_status(job.job_id, Status.COMPLETE)
-    helper.append_job_log(job.job_id, f"***{status}***")
+    helper.append_job_log(job.job_id, f"***{status.name}***")
 
 
 def resume(helper: MgmtApiHelper):
