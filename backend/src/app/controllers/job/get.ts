@@ -17,12 +17,12 @@ export default async (req: Request, res: Response) => {
 
     // Determine how many items in the queue are ahead of this one
     const aheadInQueue = await Jobs.find({
-      queue_place: { $lt: job.queuePlace },
+      queue_place: { $lte: job.queuePlace },
     });
 
     let text: string = "";
     if (job.status == Status.ENQUEUED) {
-      text = `Enqueued: ${aheadInQueue.length} Job(s) ahead in queue`;
+      text = `Enqueued: ${aheadInQueue.length + 1} Job(s) ahead in queue`;
     } else if (job.status == Status.PROCESSING) {
       text = `Currently Processing\n${job.logs}`;
     } else if (job.status == Status.COMPLETE) {

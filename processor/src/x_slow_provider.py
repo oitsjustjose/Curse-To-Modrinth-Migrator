@@ -22,6 +22,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+from urllib3.exceptions import ProtocolError, ReadTimeoutError
 from webdriver_manager.chrome import ChromeDriverManager
 
 import curse_api as cf
@@ -212,35 +213,45 @@ class SlowProvider(MgmtApiLogger):
                 }
             )
 
-            try:
-                response = requests.post(
-                    "https://api.modrinth.com/v2/version",
-                    timeout=30,
-                    headers={"Authorization": self._job.github_pat},
-                    files=[
-                        ("data", (None, payload, None)),
-                        ("files", (fpath, jar_data, "application/octet-stream")),
-                    ],
-                )
-                if response.status_code == 200:
-                    statuses.append(Status.SUCCESS)
-                    self.logmsg(f"✅ {display_nm}")
-                else:
-                    statuses.append(Status.FAIL)
-                    self.logmsg(
-                        dedent(
-                            f"""----- 🔥 {display_nm} -----
-                            API Response from Modrinth FAIL for {display_nm}:
-                            {self.decode_modrinth_resp(response)}
-                            """
-                        ).strip("\n")
+            tries, msg = 1, ""
+            while tries <= 5:
+                try:
+                    response = requests.post(
+                        "https://api.modrinth.com/v2/version",
+                        timeout=30,
+                        headers={"Authorization": self._job.github_pat},
+                        files=[
+                            ("data", (None, payload, None)),
+                            ("files", (fpath, jar_data, "application/octet-stream")),
+                        ],
                     )
+                    if response.status_code == 200:
+                        statuses.append(Status.SUCCESS)
+                        self.logmsg(f"✅ {display_nm}")
+                    else:
+                        statuses.append(Status.FAIL)
+                        self.logmsg(
+                            dedent(
+                                f"""----- 🔥 {display_nm} -----
+                                API Response from Modrinth FAIL for {display_nm}:
+                                {self.decode_modrinth_resp(response)}
+                                """
+                            ).strip("\n")
+                        )
 
-                rm(f"./out/{self._job.curseforge_slug}/{fpath}")
-            except TimeoutError:
-                self.logmsg(f"🕜 Timed out uploading {fpath}. Manual upload required")
+                    rm(f"./out/{self._job.curseforge_slug}/{fpath}")
+                    break
+                except (ReadTimeoutError, TimeoutError):
+                    tries += 1
+                    msg = f"🕜 Timed out uploading {fpath}. Manual upload required"
+                    continue
+                except (ProtocolError, requests.exceptions.ChunkedEncodingError):
+                    tries += 1
+                    msg = f"🔥 Uploading {display_nm} to Modrinth failed, skipping.."
+                    continue
+            if tries == 5:
+                self.logmsg(msg)
                 statuses.append(Status.FAIL)
-
             # endregion UPLOAD THE MOD
 
         any_succ = len(list(filter(lambda x: x == Status.SUCCESS, statuses))) > 0

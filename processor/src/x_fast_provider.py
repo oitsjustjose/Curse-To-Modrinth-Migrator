@@ -10,8 +10,9 @@ from os import environ as env
 from os import unlink as rm
 from textwrap import dedent
 from typing import List
-from urllib3.exceptions import ProtocolError
+
 import requests
+from urllib3.exceptions import ProtocolError, ReadTimeoutError
 
 import curse_api as cf
 from common import Job, Status
@@ -90,37 +91,44 @@ class FastProvider(MgmtApiLogger):
                 }
             )
 
-            try:
-                response = requests.post(
-                    "https://api.modrinth.com/v2/version",
-                    timeout=30,
-                    headers={"Authorization": self._job.github_pat},
-                    files=[
-                        ("data", (None, payload, None)),
-                        ("files", (jar_fn, jar_data, "application/octet-stream")),
-                    ],
-                )
-                if response.status_code == 200:
-                    statuses.append(Status.SUCCESS)
-                    self.logmsg(f"✅ {display_nm}")
-                else:
-                    statuses.append(Status.FAIL)
-                    self.logmsg(
-                        dedent(
-                            f"""----- 🔥 {display_nm} -----
-                            API Response from Modrinth FAIL for {display_nm}:
-                            {self.decode_modrinth_resp(response)}
-                            """
-                        ).strip("\n")
+            tries, msg = 1, ""
+            while tries <= 5:
+                try:
+                    response = requests.post(
+                        "https://api.modrinth.com/v2/version",
+                        timeout=30,
+                        headers={"Authorization": self._job.github_pat},
+                        files=[
+                            ("data", (None, payload, None)),
+                            ("files", (jar_fn, jar_data, "application/octet-stream")),
+                        ],
                     )
+                    if response.status_code == 200:
+                        statuses.append(Status.SUCCESS)
+                        self.logmsg(f"✅ {display_nm}")
+                    else:
+                        statuses.append(Status.FAIL)
+                        self.logmsg(
+                            dedent(
+                                f"""----- 🔥 {display_nm} -----
+                                API Response from Modrinth FAIL for {display_nm}:
+                                {self.decode_modrinth_resp(response)}
+                                """
+                            ).strip("\n")
+                        )
 
-                rm(jar_fn)
-            except (ProtocolError, requests.exceptions.ChunkedEncodingError):
-                self.logmsg(f"🔥 Uploading {display_nm} to Modrinth failed, skipping..")
-                statuses.append(Status.FAIL)
-                continue
-            except TimeoutError:
-                self.logmsg(f"🕜 Timed out uploading {jar_fn}. Manual upload required")
+                    rm(jar_fn)
+                    break
+                except (ReadTimeoutError, TimeoutError):
+                    tries += 1
+                    msg = f"🕜 Timed out uploading {jar_fn}. Manual upload required"
+                    continue
+                except (ProtocolError, requests.exceptions.ChunkedEncodingError):
+                    tries += 1
+                    msg = f"🔥 Uploading {display_nm} to Modrinth failed, skipping.."
+                    continue
+            if tries == 5:
+                self.logmsg(msg)
                 statuses.append(Status.FAIL)
             # endregion UPLOAD JAR FILE
         return statuses
