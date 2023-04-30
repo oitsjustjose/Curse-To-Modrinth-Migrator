@@ -109,3 +109,14 @@ class MgmtApiLogger:
         Args: msg(str): the message to log
         """
         self.helper.append_job_log(self._job_id, msg)
+
+    def decode_modrinth_resp(self, resp: requests.Response) -> str:
+        """
+        Decodes a modrinth response into a normal, human-readable string
+        Args: resp (Response): the response from your request
+        Returns: (str): the human-readable string
+        """
+        try:
+            return resp.json()["description"]
+        except (requests.exceptions.JSONDecodeError, KeyError):
+            return resp.text

@@ -40,7 +40,6 @@ def driver_get(driver: webdriver, url: str, timeout=30) -> bool:
         (bool): True if successfully navigated, False otherwise
     """
     try:
-        print(f"Attempting to get URL {url}")
         driver.get(url)
         WebDriverWait(driver, timeout).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
@@ -226,16 +225,13 @@ class SlowProvider(MgmtApiLogger):
                 if response.status_code == 200:
                     statuses.append(Status.SUCCESS)
                     self.logmsg(f"✅ {display_nm}")
-                    print(f"✅ {display_nm}")
                 else:
-                    print(response.text)
-                    print(response.json())
                     statuses.append(Status.FAIL)
                     self.logmsg(
                         dedent(
                             f"""----- 🔥 {display_nm} -----
                             API Response from Modrinth FAIL for {display_nm}:
-                            {response.json()["description"]}
+                            {self.decode_modrinth_resp(response)}
                             """
                         ).strip("\n")
                     )

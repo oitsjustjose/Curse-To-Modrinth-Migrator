@@ -100,13 +100,12 @@ class FastProvider(MgmtApiLogger):
                     statuses.append(Status.SUCCESS)
                     self.logmsg(f"✅ {display_nm}")
                 else:
-                    print(response.json()["description"])
                     statuses.append(Status.FAIL)
                     self.logmsg(
                         dedent(
                             f"""----- 🔥 {display_nm} -----
                             API Response from Modrinth FAIL for {display_nm}:
-                            {response.json()["description"]}
+                            {self.decode_modrinth_resp(response)}
                             """
                         ).strip("\n")
                     )
