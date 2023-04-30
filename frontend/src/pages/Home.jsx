@@ -3,14 +3,15 @@ import React, { useState, useEffect } from 'react';
 import {
   Form, Button, Container, Accordion, Image,
 } from 'react-bootstrap';
-import { TbInfoHexagon } from 'react-icons/tb';
+import { TbInfoHexagon, TbHelp } from 'react-icons/tb';
 import OutputLog from '../components/OutputLog';
 import Info from '../components/Help/Info';
 import HeaderImg from '../img/ctm.png';
+import ModrinthProjId from '../components/Help/ModrinthProjId';
 
 export default () => {
   const [dark, setDark] = useState(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  const [modals, setModals] = useState({ info: false, delim: false });
+  const [modals, setModals] = useState({ info: false, mpid: false });
   const [jobId, setJobId] = useState(window.localStorage.getItem('last-jobid'));
   const [formData, setFormData] = useState({
     githubPat: '',
@@ -57,6 +58,7 @@ export default () => {
   return (
     <div className="ctm-root">
       <Info override={modals.info} propagateOnHide={() => setModals({ ...modals, info: false })} />
+      <ModrinthProjId show={modals.mpid} onHide={() => setModals({ ...modals, mpid: false })} />
 
       <Container style={{ margin: '1rem auto', maxWidth: '512px' }}>
         <Image className="d-block mb-3 mx-auto w-50 headerimg" src={HeaderImg} />
@@ -109,7 +111,19 @@ export default () => {
           </Form.Group>
 
           <Form.Group className="mb-3" controlId="projId">
-            <Form.Label>Modrinth Project ID</Form.Label>
+            <Form.Label>
+              Modrinth Project ID
+              {' '}
+              <Button
+                size="lg"
+                className="anchor-disguised"
+                onClick={() => setModals({ ...modals, mpid: true })}
+                type="button"
+                variant=""
+              >
+                <TbHelp fontSize="1.5rem" />
+              </Button>
+            </Form.Label>
             <Form.Control
               type="text"
               required
@@ -148,12 +162,6 @@ export default () => {
         </Accordion>
         )}
       </Container>
-
-      {/* <Button
-
-        className="info"
-        variant="light"
-      /> */}
     </div>
   );
 };

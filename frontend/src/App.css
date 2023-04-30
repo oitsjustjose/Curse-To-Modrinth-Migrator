@@ -15,10 +15,6 @@ button.info {
   padding: 0.5rem !important;
 }
 
-button.info svg {
-  vertical-align: top;
-}
-
 .ctm-root {
   margin: auto;
   max-width: 768px;
@@ -35,4 +31,21 @@ button.info svg {
 .headerimg {
   filter: drop-shadow(1.15px 1.15px 0 #ffffff30)
     drop-shadow(-1.15px -1.15px 0 #ffffff30);
+}
+
+.anchor-disguised:target,
+.anchor-disguised:focus-visible,
+.anchor-disguised:target,
+.anchor-disguised:target {
+  border: 1px solid #ffffff99 !important;
+}
+
+.anchor-disguised {
+  padding: 0 !important;
+  text-align: center;
+  aspect-ratio: 1;
+}
+
+button svg {
+  vertical-align: top;
 }
