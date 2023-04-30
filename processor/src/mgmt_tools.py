@@ -59,7 +59,6 @@ class MgmtApiHelper:
             modrinth_id=data["modrinthId"],
             logs=data["logs"] if "logs" in data else [],
             job_id=data["jobId"],
-            delimiter=data["delimiter"] if "delimiter" in data else "-",
             status=data["status"],
             queue_place=data["queuePlace"],
         )

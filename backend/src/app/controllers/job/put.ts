@@ -36,7 +36,6 @@ export default async (req: Request, res: Response) => {
       githubPat: fern.encrypt(req.body.githubPat),
       curseforgeSlug: req.body.curseforgeSlug,
       modrinthId: req.body.modrinthId,
-      delimiter: req.body.delimiter || "-",
       queuePlace: await getNextQueuePlace(),
     });
 

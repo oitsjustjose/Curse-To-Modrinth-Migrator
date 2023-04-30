@@ -7,7 +7,6 @@ export type JobType = Document & {
   githubPat: string;
   curseforgeSlug: string;
   modrinthId: string;
-  delimiter: string;
   logs: string;
   status: number;
   queuePlace: number;
@@ -28,10 +27,6 @@ const JobSchema = new Schema<JobType>({
     required: true,
   },
   modrinthId: {
-    type: String,
-    required: true,
-  },
-  delimiter: {
     type: String,
     required: true,
   },

@@ -3,10 +3,9 @@ import React, { useState, useEffect } from 'react';
 import {
   Form, Button, Container, Accordion, Image,
 } from 'react-bootstrap';
-import { TbInfoHexagon, TbHelp } from 'react-icons/tb';
+import { TbInfoHexagon } from 'react-icons/tb';
 import OutputLog from '../components/OutputLog';
 import Info from '../components/Help/Info';
-import Delimiter from '../components/Help/Delimiter';
 import HeaderImg from '../img/ctm.png';
 
 export default () => {
@@ -58,7 +57,6 @@ export default () => {
   return (
     <div className="ctm-root">
       <Info override={modals.info} propagateOnHide={() => setModals({ ...modals, info: false })} />
-      <Delimiter show={modals.delim} onHide={() => setModals({ ...modals, delim: false })} />
 
       <Container style={{ margin: '1rem auto', maxWidth: '512px' }}>
         <Image className="d-block mb-3 mx-auto w-50 headerimg" src={HeaderImg} />
@@ -120,31 +118,6 @@ export default () => {
               onChange={(x) => setFormData({
                 ...formData,
                 modrinthId: x.target.value,
-              })}
-            />
-          </Form.Group>
-
-          <Form.Group className="mb-3" controlId="delimiter">
-            <Form.Label>
-              Delimiter (Optional)
-              {' '}
-              {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-              <a
-                onClick={() => setModals({ ...modals, delim: true })}
-                style={{ textDecoration: 'none', fontSize: '16px' }}
-                href="#"
-                label="delimiter_help"
-              >
-                <TbHelp />
-              </a>
-            </Form.Label>
-            <Form.Control
-              placeholder="Defaults to Hyphen (-)"
-              type="text"
-              value={formData.delimiter}
-              onChange={(x) => setFormData({
-                ...formData,
-                delimiter: x.target.value,
               })}
             />
           </Form.Group>

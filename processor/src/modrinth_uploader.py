@@ -3,6 +3,7 @@ Uploads mod files to Modrinth
 Author: oitsjustjose @ modrinth/curseforge/twitter
 """
 import json
+import re
 import os
 from shutil import rmtree
 from typing import List, Union
@@ -38,22 +39,32 @@ class ModrinthUploader(MgmtApiLogger):
             return [root, f"{root}.1", f"{root}.2"]
         return [parts[1]]
 
-    def __extrapolate_mod(self, filename: str) -> Union[ModInfo, None]:
+    def __get_mod_info(self, filename: str) -> Union[ModInfo, None]:
         """
-        Extrapolates mod info from a given jarfile name
+        Loads mod info from the manifest generated during download
         Args:
             filename (str): the name of the jarfile
-            delimiter (str): the splitter between parts of the filename
         Returns: (ModInfo|None): the extraploted mod info, None if extrap failed
         """
+        name = filename.replace(".jar", "")
 
-        parts = filename.replace(".jar", "").split(self._job.delimiter)
+        # Finds the versioning (like 1.19.2-1.2.3, 1.2.3) in the name
+        # TODO: more robust to grab from jar metadata, but sometimes it isn't there?
+        search = re.search(r"([0-9.].*)", name)
+        if not search:
+            return None
+
+        mod_version = name[search.start() : search.end()]
+        manifest_path = f"./out/{self._job.curseforge_slug}.mf.json"
+        with open(manifest_path, "r", encoding="utf-8") as handle:
+            manifest = json.loads(handle.read())
+
         return ModInfo(
-            name=parts[0],
-            mod_version=parts[2],
-            modrinth_name=" ".join(parts),
-            game_version=parts[1],
-            game_versions=self.__get_versions(parts),
+            modrinth_name=name,
+            mod_version=mod_version,
+            loaders=manifest[filename]["loaders"],
+            game_version=manifest[filename]["version"],
+            game_versions=manifest[filename]["versions"],
         )
 
     def upload(self) -> Status:
@@ -63,8 +74,6 @@ class ModrinthUploader(MgmtApiLogger):
             api_key (str): the GitHub PAT for the associated Modrinth account
             slug (str): the CurseForge slug, used to traverse the local filesystem
             proj_id (str): the Modrinth project id
-            delimiter (str): the splitter between parts of the filename. Geolosys uses format
-                "MODNAME-MCVER-MAJOR.MINOR.PATCH", where '-' is the delimiter
         Returns:
             Tuple[Status, List[str]]: The overall status and any accompanying logs
         """
@@ -81,7 +90,7 @@ class ModrinthUploader(MgmtApiLogger):
             with open(f"out/{self._job.curseforge_slug}/{fpath}", "rb") as modfile:
                 data = modfile.read()
 
-            mod_info = self.__extrapolate_mod(fpath)
+            mod_info = self.__get_mod_info(fpath)
             if not mod_info:
                 self.logmsg(f"Couldn't parse name/version info for file {fpath}")
                 continue
@@ -102,6 +111,7 @@ class ModrinthUploader(MgmtApiLogger):
                     "file_parts": [fpath],
                 }
             )
+            print(payload)
 
             try:
                 response = requests.post(

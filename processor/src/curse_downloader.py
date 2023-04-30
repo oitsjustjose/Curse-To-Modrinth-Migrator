@@ -2,19 +2,47 @@
 Downloads mod files from Curse
 Author: oitsjustjose @ modrinth/curseforge/twitter
 """
+import json
 import os
+import re
 from time import sleep
 from typing import List
 
 import selenium.common.exceptions as selex
 from bs4 import BeautifulSoup
 from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 
 from common import Job, Status
 from mgmt_tools import MgmtApiHelper, MgmtApiLogger
+
+
+def driver_get(driver: webdriver, url: str, timeout=30) -> bool:
+    """
+    Attempts to get a URL with a given webdriver with a timeout
+    Args:
+        driver (webdriver): the webdriver
+        url (str): the url to navigate to
+        timeout (int) = 30: the time to wait before quitting
+    Returns:
+        (bool): True if successfully navigated, False otherwise
+    """
+    try:
+        print(f"Attempting to get URL {url}")
+        driver.get(url)
+        WebDriverWait(driver, timeout).until(
+            EC.presence_of_element_located((By.TAG_NAME, "body"))
+        )
+        return True
+    except TimeoutException:
+        print(f"Failed to get {url}")
+        return False
 
 
 class CurseDownloader(MgmtApiLogger):
@@ -72,6 +100,9 @@ class CurseDownloader(MgmtApiLogger):
             )
             return Status.FAIL
 
+        self.__build_manifest(all_urls)
+        # Convert to DL links AFTER building mf.json
+        all_urls = list(map(lambda x: x.replace("files", "download"), all_urls))
         statuses = self.__download_files(all_urls)
         any_succ = len(list(filter(lambda x: x == Status.SUCCESS, statuses))) > 0
         any_fail = len(list(filter(lambda x: x == Status.SUCCESS, statuses))) > 0
@@ -82,8 +113,45 @@ class CurseDownloader(MgmtApiLogger):
             if any_succ and not any_fail
             else Status.FAIL
         )
-
         return status
+
+    def __build_manifest(self, all_urls: List[str]) -> None:
+        """Builds the manifest with important metadata"""
+        self.logmsg("Building Manifest")
+        manifest = {}
+        all_loaders = ["forge", "fabric", "quilt"]
+        for url in all_urls:
+            driver_get(self._driver, url)
+            soup = BeautifulSoup(self._driver.page_source, features="html.parser")
+
+            # REGION GET FILE NAME
+            header = soup.find_all(
+                "span", attrs={"class": "font-bold text-sm leading-loose"}
+            )
+            header = list(filter(lambda x: x.text == "Filename", header))[0]
+            file_name = header.parent()[-1].text
+            # ENDREGION GET FILE NAME
+
+            # REGION GET VERSIONS
+            vers = soup.find_all("span", attrs={"class": "tag"})
+            vers = list(filter(lambda x: re.match(r"^[0-9.]", x.text), vers))
+            vers = list(map(lambda x: re.sub(r"[^0-9.]", "", x.text), vers))
+            vers.sort()
+            # ENDREGION GET VERSIONS
+
+            # REGION GET LOADER
+            loaders = soup.find_all("span", attrs={"class": "tag"})
+            loaders = list(filter(lambda x: x.text.lower() in all_loaders, loaders))
+            loaders = list(map(lambda x: x.text.lower(), loaders))
+            # ENDREGION GET LOADER
+
+            manifest[file_name] = {
+                "versions": vers,
+                "version": vers[-1],
+                "loaders": loaders or ["forge"],
+            }
+        with open(f"./out/{self._slug}.mf.json", "w", encoding="utf-8") as handle:
+            handle.write(json.dumps(manifest))
 
     def __download_files(self, all_urls: List[str]) -> List[Status]:
         """
@@ -100,7 +168,7 @@ class CurseDownloader(MgmtApiLogger):
 
         for url in all_urls:
             try:
-                self._driver.get(url)
+                driver_get(self._driver, url)
                 sleep(8)
                 # Verify if/that file actually downloaded:
                 new_file_cnt = len(os.listdir(f"./out/{self._slug}"))
@@ -139,14 +207,13 @@ class CurseDownloader(MgmtApiLogger):
             root (str): the root url, i.e. https://legacy.curseforge.com/{slug}/files/all
         Returns: (int): the number of pages for the mod
         """
-        self._driver.get(f"{root}?page=1")
-        root = self._driver.page_source
-        root = BeautifulSoup(root, features="html.parser")
-        root = root.body.find_all("a", attrs={"class": "pagination-item"})
-        if root:  # mods with only 1 page won't have a pagination item
-            root = root[-1]
-            root = root.find("span").text
-            return int(root)
+        driver_get(self._driver, f"{root}?page=1")
+        soup = BeautifulSoup(self._driver.page_source, features="html.parser")
+        soup = soup.body.find_all("a", attrs={"class": "pagination-item"})
+        if soup:  # mods with only 1 page won't have a pagination item
+            soup = soup[-1]
+            soup = soup.find("span").text
+            return int(soup)
         return 1
 
     def __get_dl_urls_for_page(self, root: str, page: int) -> List[str]:
@@ -159,18 +226,12 @@ class CurseDownloader(MgmtApiLogger):
         Returns:
             (List[str]): a list of download urls for the mod files
         """
-        self._driver.get(f"{root}?page={page}")
+        driver_get(self._driver, f"{root}?page={page}")
 
-        root_el = self._driver.page_source
-        root_el = BeautifulSoup(root_el, features="html.parser")
-
-        file_links = root_el.body.find_all("a", attrs={"data-action": "file-link"})
-
-        return list(
-            map(
-                lambda x: f"https://legacy.curseforge.com/{x['href']}".replace(
-                    "files", "download"
-                ),
-                file_links,
-            )
+        soup = BeautifulSoup(self._driver.page_source, features="html.parser")
+        file_links = soup.find_all("a", attrs={"data-action": "file-link"})
+        file_links = list(map(lambda x: x["href"], file_links))
+        file_links = list(
+            map(lambda x: f"https://legacy.curseforge.com{x}", file_links)
         )
+        return file_links

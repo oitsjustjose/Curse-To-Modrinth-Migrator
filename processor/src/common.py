@@ -27,7 +27,6 @@ class Job:
     curseforge_slug: str
     modrinth_id: str
     job_id: str = ""
-    delimiter: str = "-"
     logs: str = ""
     status: Status = Status.ENQUEUED
     queue_place: int = 0
@@ -37,8 +36,8 @@ class Job:
 class ModInfo:
     """Stores metadata about a jarfile to be extrapolated"""
 
-    name: str
     mod_version: str
     modrinth_name: str
+    loaders: List[str]
     game_version: str  # representative game ver
     game_versions: List[str]  # actual game vers
