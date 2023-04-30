@@ -115,6 +115,10 @@ class FastProvider(MgmtApiLogger):
                     )
 
                 rm(jar_fn)
+            except (ProtocolError, requests.exceptions.ChunkedEncodingError):
+                self.logmsg(f"🔥 Uploading {display_nm} to Modrinth failed, skipping..")
+                statuses.append(Status.FAIL)
+                continue
             except TimeoutError:
                 self.logmsg(f"🕜 Timed out uploading {jar_fn}. Manual upload required")
                 statuses.append(Status.FAIL)
