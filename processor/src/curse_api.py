@@ -77,7 +77,6 @@ def get_loader_info(game_versions: List[str]) -> Tuple[List[str], List[str]]:
     Args: game_versions (List[str]): the list of game versions
     Returns: (Tuple[List[str], List[str]]): the minecraft versions and the loader(s), respectively
     """
-    print(game_versions)
     mc_versions = list(
         filter(lambda x: re.match(r"^1.[0-9].*.[0-9]?", x), game_versions)
     )

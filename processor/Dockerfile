@@ -32,7 +32,4 @@ COPY . .
 
 RUN pip install -r requirements.txt
 
-ENV SECRET ""
-ENV MGMT_KEY ""
-
 CMD ["python", "src/__main__.py"]

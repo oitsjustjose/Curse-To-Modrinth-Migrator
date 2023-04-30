@@ -86,8 +86,6 @@ class FastProvider(MgmtApiLogger):
                 }
             )
 
-            print(payload)
-
             try:
                 response = requests.post(
                     "https://api.modrinth.com/v2/version",
