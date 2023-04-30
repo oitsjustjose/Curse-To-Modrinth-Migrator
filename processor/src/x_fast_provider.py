@@ -119,7 +119,11 @@ class FastProvider(MgmtApiLogger):
 
                     rm(jar_fn)
                     break
-                except (ReadTimeoutError, TimeoutError):
+                except (
+                    requests.exceptions.ReadTimeout,
+                    ReadTimeoutError,
+                    TimeoutError,
+                ):
                     tries += 1
                     msg = f"🕜 Timed out uploading {jar_fn}. Manual upload required"
                     continue

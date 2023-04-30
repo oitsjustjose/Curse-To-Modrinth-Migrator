@@ -241,7 +241,11 @@ class SlowProvider(MgmtApiLogger):
 
                     rm(f"./out/{self._job.curseforge_slug}/{fpath}")
                     break
-                except (ReadTimeoutError, TimeoutError):
+                except (
+                    requests.exceptions.ReadTimeout,
+                    ReadTimeoutError,
+                    TimeoutError,
+                ):
                     tries += 1
                     msg = f"🕜 Timed out uploading {fpath}. Manual upload required"
                     continue
