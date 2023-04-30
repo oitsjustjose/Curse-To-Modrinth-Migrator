@@ -7,3 +7,5 @@ state.dat
 filekey.key
 __pycache__
 .envrc
+
+*.jar
