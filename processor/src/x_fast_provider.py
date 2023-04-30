@@ -59,6 +59,10 @@ class FastProvider(MgmtApiLogger):
                     with open(jar_fn, "wb") as jar:
                         for chunk in strm.iter_content(chunk_size=8192):
                             jar.write(chunk)
+            except requests.exceptions.ChunkedEncodingError:
+                self.logmsg(f"🔥 Downloading {display_nm} from Curse failed, skipping..")
+                statuses.append(Status.FAIL)
+                continue
             except TimeoutError:
                 self.logmsg(f"🕜 Timed out downloading {display_nm}, skipping..")
                 statuses.append(Status.FAIL)
