@@ -10,7 +10,7 @@ from os import environ as env
 from os import unlink as rm
 from textwrap import dedent
 from typing import List
-
+from urllib3.exceptions import ProtocolError
 import requests
 
 import curse_api as cf
@@ -59,7 +59,7 @@ class FastProvider(MgmtApiLogger):
                     with open(jar_fn, "wb") as jar:
                         for chunk in strm.iter_content(chunk_size=8192):
                             jar.write(chunk)
-            except requests.exceptions.ChunkedEncodingError:
+            except (ProtocolError, requests.exceptions.ChunkedEncodingError):
                 self.logmsg(f"🔥 Downloading {display_nm} from Curse failed, skipping..")
                 statuses.append(Status.FAIL)
                 continue
