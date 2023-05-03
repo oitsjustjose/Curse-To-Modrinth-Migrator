@@ -57,7 +57,11 @@ export default () => {
 
   return (
     <div className="ctm-root">
-      <Info override={modals.info} propagateOnHide={() => setModals({ ...modals, info: false })} />
+      <Info
+        dark={dark}
+        override={modals.info}
+        propagateOnHide={() => setModals({ ...modals, info: false })}
+      />
       <ModrinthProjId show={modals.mpid} onHide={() => setModals({ ...modals, mpid: false })} />
 
       <Container style={{ margin: '1rem auto', maxWidth: '512px' }}>

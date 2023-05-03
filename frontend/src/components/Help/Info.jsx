@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Modal } from 'react-bootstrap';
+import { Modal, Image } from 'react-bootstrap';
+import ThirdPartyHelp from '../../img/cftpd.png';
 
-export default ({ override, propagateOnHide }) => {
+export default ({ dark, override, propagateOnHide }) => {
   const [show, setShow] = useState(!window.localStorage.getItem('info-dismissed'));
 
   const onHide = () => {
@@ -52,17 +53,30 @@ export default ({ override, propagateOnHide }) => {
         </ul>
 
         <p>
-          This tool works on a queue-based system since this process is pretty slow.
-          I apologize that it might take a while to process, but while you wait you can always:
+          This tool works fastest if your CurseForge Project allows Third Party Downloads. If you
+          do, migration should take about 1 minute for every 50 files. If you do not, migration
+          takes 7 minutes due to nasty workarounds I had to implement. I suggest enabling third
+          party downloads in your project settings:
         </p>
 
+        <Image
+          style={{ filter: dark ? 'invert(1)' : 'none' }}
+          src={ThirdPartyHelp}
+          className="d-block mx-auto my-3 mw-100"
+          rounded
+        />
+
+        <p>
+          While you wait for your migration to complete, you can close this tab,
+          put it in the background, or
+        </p>
         <ul>
           <li>
             Support me
             {' '}
             <a href="https://dv2ls.com/don8" target="_blank" rel="noreferrer">with a Donation</a>
           </li>
-          <li>Share this tool on Social Media!</li>
+          <li>Share this tool on Twitter, Discord or whatever you please! </li>
         </ul>
       </Modal.Body>
     </Modal>
