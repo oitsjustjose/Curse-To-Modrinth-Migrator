@@ -10,9 +10,25 @@
 
 button.info {
   float: right;
-  aspect-ratio: 1;
-  border-radius: 100%;
-  padding: 0.5rem !important;
+  border-radius: 50%;
+  min-width: 38px;
+  max-width: 2.5rem;
+  overflow: none;
+  text-align: center;
+  padding: 0;
+}
+button.info::before {
+  content: '';
+  display: inline-block;
+  vertical-align: middle;
+  padding-top: 100%;
+}
+
+button.info svg {
+  font-size: 1.5rem;
+  display: inline-block;
+  vertical-align: middle;
+  max-width: 90%;
 }
 
 .ctm-root {
