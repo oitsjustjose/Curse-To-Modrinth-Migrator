@@ -8,7 +8,7 @@ import OutputLog from '../components/OutputLog';
 import Info from '../components/Help/Info';
 import HeaderImg from '../img/ctm.png';
 import ModrinthProjId from '../components/Help/ModrinthProjId';
-import { DoModrinthOauth, GetModrinthOauth, ModrinthOauthCallbackHandler } from '../shared';
+import { CreateModrinthUri, ModrinthOauthCallbackHandler } from '../shared';
 
 export default () => {
   const [dark, setDark] = useState(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -19,43 +19,47 @@ export default () => {
     modrinthId: '',
   });
 
-  const makeJob = async (evt) => {
+  /*
+    Begins the Modrinth OAuth flow, creating a URL with a callback that has the
+      data we need in the query params and will return back with the client's
+      oauth code that will be needed back on the backend
+  */
+  const startOauthFlow = (evt) => {
     evt && evt.preventDefault();
-    if (!formData.curseforgeSlug.length) return;
-    if (!formData.modrinthId.length) return;
 
-    /* OAuth block to verify we're logged in */
-    const oauthToken = GetModrinthOauth();
-    if (!oauthToken) {
-      DoModrinthOauth(formData.curseforgeSlug, formData.modrinthId);
-      return;
-    }
-
-    const body = {
-      curseforgeSlug: formData.curseforgeSlug,
-      modrinthId: formData.modrinthId,
-      oauthToken,
-    };
-
-    const resp = await fetch('/api/v1/jobs', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-
-    if (resp && resp.ok) {
-      const data = await resp.text();
-      setJobId(data);
-      window.localStorage.setItem('last-jobid', data);
-    }
+    const uri = CreateModrinthUri(formData.curseforgeSlug, formData.modrinthId);
+    window.location.href = uri;
   };
 
   useEffect(() => { // Handle the Modrinth OAuth callback
+    const internalCreateJob = async (formDataIn) => {
+      if (!formDataIn.curseforgeSlug.length) return;
+      if (!formDataIn.modrinthId.length) return;
+      if (!formDataIn.code.length) return;
+
+      const body = {
+        curseforgeSlug: formDataIn.curseforgeSlug,
+        modrinthId: formDataIn.modrinthId,
+        clientOauthCode: formDataIn.code,
+      };
+
+      const resp = await fetch('/api/v1/jobs', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (resp && resp.ok) {
+        const data = await resp.text();
+        setJobId(data);
+        window.localStorage.setItem('last-jobid', data);
+      }
+    };
+
     const newFormData = ModrinthOauthCallbackHandler();
     if (!newFormData) return () => { };
 
-    setFormData({ ...newFormData });
-    makeJob();
+    internalCreateJob(newFormData);
 
     // Push state w/o URLQuery to avoid infinite reload of the page
     if (window.history.pushState) {
@@ -65,7 +69,7 @@ export default () => {
     }
 
     return () => { };
-  }, [ModrinthOauthCallbackHandler, setFormData, makeJob]);
+  }, [ModrinthOauthCallbackHandler]);
 
   useEffect(() => { // DARK MODE STUFF HERE
     // Set initial state before even bothering with the update state
@@ -111,7 +115,7 @@ export default () => {
           <b>M</b>
           igrator
         </p>
-        <Form onSubmit={makeJob} className="juse-form">
+        <Form onSubmit={startOauthFlow} className="juse-form">
           <Form.Group className="mb-3" controlId="slug">
             <Form.Label>CurseForge Project Slug</Form.Label>
             <Form.Control

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { Modal, Image, Button } from 'react-bootstrap';
+import { Image, Modal } from 'react-bootstrap';
 import ThirdPartyHelp from '../../img/cftpd.png';
-import { DoModrinthOauth } from '../../shared';
 
 export default ({ dark, override, propagateOnHide }) => {
   const [show, setShow] = useState(!window.localStorage.getItem('info-dismissed'));
@@ -67,12 +66,6 @@ export default ({ dark, override, propagateOnHide }) => {
           </li>
           <li>Share this tool on Twitter, Discord or whatever you please! </li>
         </ul>
-
-        <div className="w-100 d-flex justify-content-center align-items-center">
-          <Button variant="success" className="modrinth" onClick={DoModrinthOauth}>
-            Authenticate with Modrinth
-          </Button>
-        </div>
       </Modal.Body>
     </Modal>
   );
