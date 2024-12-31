@@ -1,3 +1,5 @@
+const MODRINTH_CLIENT_ID = '50zijYLk';
+
 /**
  * Creates a modrinth URI with a given URL encoded callback
  * @param {string | null} curseforgeSlug
@@ -9,7 +11,7 @@ export const CreateModrinthUri = (curseforgeSlug, modrinthId) => {
   const uri = new URL(`${window.location.origin}${window.location.pathname}`);
   uri.searchParams.set('curseforgeSlug', curseforgeSlug);
   uri.searchParams.set('modrinthId', modrinthId);
-  return `https://modrinth.com/auth/authorize?client_id=${process.env.REACT_APP_MODRINTH_OAUTH_CLIENT_ID}&redirect_uri=${encodeURIComponent(uri.toString())}&scope=PROJECT_WRITE+VERSION_CREATE`;
+  return `https://modrinth.com/auth/authorize?client_id=${MODRINTH_CLIENT_ID}&redirect_uri=${encodeURIComponent(uri.toString())}&scope=PROJECT_WRITE+VERSION_CREATE`;
 };
 
 /**
