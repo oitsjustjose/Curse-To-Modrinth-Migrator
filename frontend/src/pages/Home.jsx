@@ -8,16 +8,64 @@ import OutputLog from '../components/OutputLog';
 import Info from '../components/Help/Info';
 import HeaderImg from '../img/ctm.png';
 import ModrinthProjId from '../components/Help/ModrinthProjId';
+import { DoModrinthOauth, GetModrinthOauth, ModrinthOauthCallbackHandler } from '../shared';
 
 export default () => {
   const [dark, setDark] = useState(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const [modals, setModals] = useState({ info: false, mpid: false });
   const [jobId, setJobId] = useState(window.localStorage.getItem('last-jobid'));
   const [formData, setFormData] = useState({
-    githubPat: '',
     curseforgeSlug: '',
     modrinthId: '',
   });
+
+  const makeJob = async (evt) => {
+    evt && evt.preventDefault();
+    if (!formData.curseforgeSlug.length) return;
+    if (!formData.modrinthId.length) return;
+
+    /* OAuth block to verify we're logged in */
+    const oauthToken = GetModrinthOauth();
+    if (!oauthToken) {
+      DoModrinthOauth(formData.curseforgeSlug, formData.modrinthId);
+      return;
+    }
+
+    const body = {
+      curseforgeSlug: formData.curseforgeSlug,
+      modrinthId: formData.modrinthId,
+      oauthToken,
+    };
+
+    const resp = await fetch('/api/v1/jobs', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (resp && resp.ok) {
+      const data = await resp.text();
+      setJobId(data);
+      window.localStorage.setItem('last-jobid', data);
+    }
+  };
+
+  useEffect(() => { // Handle the Modrinth OAuth callback
+    const newFormData = ModrinthOauthCallbackHandler();
+    if (!newFormData) return () => { };
+
+    setFormData({ ...newFormData });
+    makeJob();
+
+    // Push state w/o URLQuery to avoid infinite reload of the page
+    if (window.history.pushState) {
+      const url = new URL(window.location.href);
+      url.search = '';
+      window.history.pushState({ path: url.toString() }, '', url.toString());
+    }
+
+    return () => { };
+  }, [ModrinthOauthCallbackHandler, setFormData, makeJob]);
 
   useEffect(() => { // DARK MODE STUFF HERE
     // Set initial state before even bothering with the update state
@@ -35,25 +83,6 @@ export default () => {
     pref.addEventListener('change', onChange);
     return () => pref.removeEventListener('change', onChange);
   }, [dark, setDark]);
-
-  const makeJob = async (evt) => {
-    evt.preventDefault();
-    if (!formData.githubPat.length) return;
-    if (!formData.curseforgeSlug.length) return;
-    if (!formData.modrinthId.length) return;
-
-    const resp = await fetch('/api/v1/jobs', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData),
-    });
-
-    if (resp && resp.ok) {
-      const data = await resp.text();
-      setJobId(data);
-      window.localStorage.setItem('last-jobid', data);
-    }
-  };
 
   return (
     <div className="ctm-root">
@@ -83,23 +112,6 @@ export default () => {
           igrator
         </p>
         <Form onSubmit={makeJob} className="juse-form">
-          <Form.Group className="mb-3" controlId="githubPat">
-            <Form.Label>GitHub Personal Access Token</Form.Label>
-            <Form.Control
-              type="password"
-              required
-              placeholder="This field is required"
-              value={formData.githubPat}
-              onChange={(x) => setFormData({
-                ...formData,
-                githubPat: x.target.value,
-              })}
-            />
-            <Form.Text className="text-muted">
-              This value is encrypted from end-to-end and even in storage
-            </Form.Text>
-          </Form.Group>
-
           <Form.Group className="mb-3" controlId="slug">
             <Form.Label>CurseForge Project Slug</Form.Label>
             <Form.Control

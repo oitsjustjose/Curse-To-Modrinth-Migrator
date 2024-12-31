@@ -65,3 +65,13 @@ button.info svg {
 button svg {
   vertical-align: top;
 }
+
+button.modrinth {
+  background-color: #1bd96a;
+  color: black;
+}
+
+button.modrinth:hover {
+  background-color: #14a551;
+  color: black;
+}

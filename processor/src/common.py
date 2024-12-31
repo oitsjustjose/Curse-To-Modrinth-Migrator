@@ -2,6 +2,7 @@
 Houses commonly used dataclasses and Enums
 Author: oitsjustjose @ modrinth/curseforge/twitter
 """
+
 from dataclasses import dataclass
 from enum import Enum
 from typing import List
@@ -23,7 +24,7 @@ class Status(Enum):
 class Job:
     """A single job"""
 
-    github_pat: str
+    oauth_token: str
     curseforge_slug: str
     modrinth_id: str
     job_id: str = ""

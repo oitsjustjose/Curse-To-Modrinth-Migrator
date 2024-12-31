@@ -4,7 +4,7 @@ import Status from "../status";
 
 export type JobType = Document & {
   jobId: string;
-  githubPat: string;
+  oauthToken: string;
   curseforgeSlug: string;
   modrinthId: string;
   logs: string;
@@ -18,7 +18,7 @@ const JobSchema = new Schema<JobType>({
     default: shortid.generate,
     required: true,
   },
-  githubPat: {
+  oauthToken: {
     type: String,
     required: true,
   },

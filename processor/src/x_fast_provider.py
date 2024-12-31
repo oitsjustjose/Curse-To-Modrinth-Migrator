@@ -97,7 +97,7 @@ class FastProvider(MgmtApiLogger):
                     response = requests.post(
                         "https://api.modrinth.com/v2/version",
                         timeout=30,
-                        headers={"Authorization": self._job.github_pat},
+                        headers={"Authorization": self._job.oauth_token},
                         files=[
                             ("data", (None, payload, None)),
                             ("files", (jar_fn, jar_data, "application/octet-stream")),
@@ -179,9 +179,7 @@ class FastProvider(MgmtApiLogger):
         status = (
             Status.PARTIAL_FAIL
             if any_succ and any_fail
-            else Status.SUCCESS
-            if any_succ and not any_fail
-            else Status.FAIL
+            else Status.SUCCESS if any_succ and not any_fail else Status.FAIL
         )
 
         return status
@@ -206,5 +204,7 @@ class FastProvider(MgmtApiLogger):
                 return "downloadUrl" in data[0]
             return False
         except TimeoutError:
-            self.logmsg("🕜 Timed out determining if Mod supports third party downloads")
+            self.logmsg(
+                "🕜 Timed out determining if Mod supports third party downloads"
+            )
             return False

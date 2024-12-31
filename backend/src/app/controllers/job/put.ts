@@ -16,7 +16,7 @@ const getNextQueuePlace = async () => {
 export default async (req: Request, res: Response) => {
   try {
     if (
-      !req.body.githubPat ||
+      !req.body.oauthToken ||
       !req.body.curseforgeSlug ||
       !req.body.modrinthId
     ) {
@@ -25,7 +25,7 @@ export default async (req: Request, res: Response) => {
         .send(
           [
             "Missing a required parameter in the JSON body",
-            "Required params: githubPat: string, curseforgeSlug: string, modrinthId: string",
+            "Required params: oauthToken: string, curseforgeSlug: string, modrinthId: string",
           ].join(" ")
         );
     }
@@ -33,7 +33,7 @@ export default async (req: Request, res: Response) => {
     const fern = new Fernet(process.env.SECRET);
 
     const newJob = new Job({
-      githubPat: fern.encrypt(req.body.githubPat),
+      oauthToken: fern.encrypt(req.body.oauthToken),
       curseforgeSlug: req.body.curseforgeSlug,
       modrinthId: req.body.modrinthId,
       queuePlace: await getNextQueuePlace(),

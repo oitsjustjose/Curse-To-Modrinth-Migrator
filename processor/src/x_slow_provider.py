@@ -4,6 +4,7 @@
 @description: A SLOW working mod migrator from Curse to Modrinth
     This one is used if you're a jerk and disable third party launchers
 """
+
 import json
 from os import environ as env
 from os import makedirs, path
@@ -219,7 +220,7 @@ class SlowProvider(MgmtApiLogger):
                     response = requests.post(
                         "https://api.modrinth.com/v2/version",
                         timeout=30,
-                        headers={"Authorization": self._job.github_pat},
+                        headers={"Authorization": self._job.oauth_token},
                         files=[
                             ("data", (None, payload, None)),
                             ("files", (fpath, jar_data, "application/octet-stream")),
@@ -263,9 +264,7 @@ class SlowProvider(MgmtApiLogger):
         status = (
             Status.PARTIAL_FAIL
             if any_succ and any_fail
-            else Status.SUCCESS
-            if any_succ and not any_fail
-            else Status.FAIL
+            else Status.SUCCESS if any_succ and not any_fail else Status.FAIL
         )
         rmdir(f"./out/{self._job.curseforge_slug}")
         return status

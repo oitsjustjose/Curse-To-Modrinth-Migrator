@@ -2,6 +2,7 @@
 Houses API Tools when communicating with the RESTful API
 Author: oitsjustjose @ modrinth/curseforge/twitter
 """
+
 from os import environ as env
 from typing import Dict, List, Union
 
@@ -54,7 +55,7 @@ class MgmtApiHelper:
     def _dict_to_job(self, data: Dict) -> Job:
         """Converts a dictionary (from mongo) into a Job"""
         return Job(
-            github_pat=self._fernet.decrypt(data["githubPat"]),
+            oauth_token=self._fernet.decrypt(data["oauthToken"]),
             curseforge_slug=data["curseforgeSlug"],
             modrinth_id=data["modrinthId"],
             logs=data["logs"] if "logs" in data else [],

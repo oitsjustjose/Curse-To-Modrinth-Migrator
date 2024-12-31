@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Modal, Image } from 'react-bootstrap';
+import { Modal, Image, Button } from 'react-bootstrap';
 import ThirdPartyHelp from '../../img/cftpd.png';
+import { DoModrinthOauth } from '../../shared';
 
 export default ({ dark, override, propagateOnHide }) => {
   const [show, setShow] = useState(!window.localStorage.getItem('info-dismissed'));
@@ -31,18 +32,6 @@ export default ({ dark, override, propagateOnHide }) => {
         </p>
 
         <ul>
-          <li>
-            A
-            {' '}
-            <a href="https://docs.github.com/en/enterprise-server@3.4/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token" target="_blank" rel="noreferrer">
-              GitHub Personal Access Token
-            </a>
-            {' '}
-            for the Account you used to log into Modrinth. No
-            permissions need to be granted to the PAT, this token will be encrypted from end
-            to end (even in storage), and it will only be used for requests to Modrinth
-            (feel encouraged to browse this source code to verify).
-          </li>
           <li>
             The CurseForge Slug for your Mod. This can be found in the General Settings for your
             project page
@@ -78,6 +67,12 @@ export default ({ dark, override, propagateOnHide }) => {
           </li>
           <li>Share this tool on Twitter, Discord or whatever you please! </li>
         </ul>
+
+        <div className="w-100 d-flex justify-content-center align-items-center">
+          <Button variant="success" className="modrinth" onClick={DoModrinthOauth}>
+            Authenticate with Modrinth
+          </Button>
+        </div>
       </Modal.Body>
     </Modal>
   );
