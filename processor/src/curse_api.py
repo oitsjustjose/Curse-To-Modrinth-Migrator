@@ -26,8 +26,13 @@ def get_modid(slug: str, logmsg: Callable[[str], None]) -> Union[str, None]:
             logmsg(f"🔥 Failed to get mod_id for {slug}.")
             return None
 
-        mod_id = response.json()["data"][0]["id"]
-        return mod_id
+        response_json = response.json()
+        try:
+            mod_id = response_json["data"][0]["id"]
+            return mod_id
+        except IndexError:
+            logmsg(f"🔥 Failed to get mod_id for {slug}")
+            return None
     except TimeoutError:
         logmsg("🕜 Timed out getting mod_id from slug")
         return None
