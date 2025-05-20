@@ -22,7 +22,8 @@ export default () => {
   /*
     Begins the Modrinth OAuth flow, creating a URL with a callback that has the
       data we need in the query params and will return back with the client's
-      oauth code that will be needed back on the backend
+      oauth code that will be needed back on the backend. When the OAuth call
+      succeeds, the callback will trigger the useEffect below to handle it.
   */
   const startOauthFlow = (evt) => {
     evt && evt.preventDefault();
@@ -33,14 +34,16 @@ export default () => {
 
   useEffect(() => { // Handle the Modrinth OAuth callback
     const internalCreateJob = async (formDataIn) => {
+      if (!formDataIn.code.length) return;
       if (!formDataIn.curseforgeSlug.length) return;
       if (!formDataIn.modrinthId.length) return;
-      if (!formDataIn.code.length) return;
+      if (!formDataIn.redirectUri.length) return;
 
       const body = {
+        clientOauthCode: formDataIn.code,
         curseforgeSlug: formDataIn.curseforgeSlug,
         modrinthId: formDataIn.modrinthId,
-        clientOauthCode: formDataIn.code,
+        redirectUri: formDataIn.redirectUri,
       };
 
       const resp = await fetch('/api/v1/jobs', {

@@ -47,14 +47,15 @@ export default async (req: Request, res: Response) => {
         body: new URLSearchParams({
           code: req.body.clientOauthCode,
           client_id: process.env.MODRINTH_OAUTH_CLIENT_ID,
-          redirect_uri: "https://ctm.oitsjustjose.com/",
+          redirect_uri: req.body.redirectUri,
           grant_type: "authorization_code",
         }),
       }
     );
 
     if (!response.ok) {
-      return res.status(400).send(response);
+      const body = await response.json();
+      return res.status(400).send(body);
     }
 
     const body = (await response.json()) as OAuthTokenResponse;

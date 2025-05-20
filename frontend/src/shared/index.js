@@ -7,7 +7,6 @@ const MODRINTH_CLIENT_ID = '50zijYLk';
  * @returns {string} The callback URI
  */
 export const CreateModrinthUri = (curseforgeSlug, modrinthId) => {
-  console.log(process.env);
   const uri = new URL(`${window.location.origin}${window.location.pathname}`);
   uri.searchParams.set('curseforgeSlug', curseforgeSlug);
   uri.searchParams.set('modrinthId', modrinthId);
@@ -21,5 +20,12 @@ export const ModrinthOauthCallbackHandler = () => {
   const params = new URLSearchParams(window.location.search);
   if (!params.has('code')) return null;
   const ret = Object.fromEntries(params);
-  return Object.keys(ret).length ? ret : null;
+
+  if (!Object.keys(ret).length) return null;
+
+  const redirectUri = new URL(`${window.location.origin}${window.location.pathname}`);
+  redirectUri.searchParams.set('curseforgeSlug', params.get('curseforgeSlug'));
+  redirectUri.searchParams.set('modrinthId', params.get('modrinthId'));
+
+  return { ...ret, redirectUri: redirectUri.toString() };
 };
